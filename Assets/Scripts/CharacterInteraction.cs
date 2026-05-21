@@ -41,6 +41,7 @@ public class CharacterInteraction : MonoBehaviour
 
     public bool IsHoldingObject => grabbedObject != null;
     public bool IsGrabCharging => leftPressedCandidate && grabbedObject == null;
+    public Transform HoldPoint => holdPoint;
 
     public event Action<GameObject> Grabbed;
     public event Action Released;
@@ -66,13 +67,6 @@ public class CharacterInteraction : MonoBehaviour
         new Color(1f, 0.38f, 0.22f),
     };
 
-    [Header("\u87BA\u4E1D\u5200")]
-    public float screwDetectDistance = 0.4f;
-    public float alignAngleThreshold = 20f;
-    public float shakeSpeedThreshold = 120f;
-    public float requiredShakeTime = 2f;
-    public float shakeGraceTime = 0.5f;
-
     Transform holdPoint;
     GameObject grabbedObject;
     Rigidbody grabbedRb;
@@ -87,11 +81,6 @@ public class CharacterInteraction : MonoBehaviour
     float leftPressTime;
     bool leftPressedCandidate;
     RaycastHit candidateHit;
-
-    float shakeAccum;
-    float lastShakeTime;
-    float prevScrewdriverYaw;
-    GameObject targetedScrew;
 
     float currentHoldDistance;
     Vector3 grabLocalOffset;
@@ -133,7 +122,6 @@ public class CharacterInteraction : MonoBehaviour
         HandleLeftPressLogic();
         HandleThrow();
         HandleScrollRotate();
-        HandleScrewdriverLogic();
     }
 
     void LateUpdate()
@@ -162,6 +150,16 @@ public class CharacterInteraction : MonoBehaviour
         }
 
         currentHoldDistance = Mathf.Clamp(currentHoldDistance, minHoldDistance, maxGrabDistance);
+        holdPoint.localPosition = Vector3.forward * currentHoldDistance;
+    }
+
+    /// <summary>
+    /// 外部脚本（如 Screwdriver）调用，把持物点沿相机前方推近或拉远。delta > 0 表示更远。
+    /// </summary>
+    public void AdjustHoldDistance(float delta)
+    {
+        if (holdPoint == null) return;
+        currentHoldDistance = Mathf.Clamp(currentHoldDistance + delta, minHoldDistance, maxGrabDistance);
         holdPoint.localPosition = Vector3.forward * currentHoldDistance;
     }
 
@@ -276,6 +274,21 @@ public class CharacterInteraction : MonoBehaviour
             results.Add(root);
         }
 
+        // 工具类物体（例如 Screwdriver）没有 ItemInformation，也希望参与描边显示。
+        Screwdriver[] allScrewdrivers = FindObjectsOfType<Screwdriver>();
+        for (int i = 0; i < allScrewdrivers.Length; i++)
+        {
+            Screwdriver sd = allScrewdrivers[i];
+            if (sd == null) continue;
+            GameObject root = sd.gameObject;
+            if (!root.activeInHierarchy) continue;
+            if ((root.transform.position - camPos).sqrMagnitude > maxDistSqr) continue;
+
+            int id = root.GetInstanceID();
+            if (!seen.Add(id)) continue;
+            results.Add(root);
+        }
+
         return results;
     }
 
@@ -351,7 +364,6 @@ public class CharacterInteraction : MonoBehaviour
         {
             leftPressTime = 0f;
             leftPressedCandidate = false;
-            targetedScrew = null;
 
             if (GetInteractableRigidbody(aimedObject) != null)
             {
@@ -435,14 +447,6 @@ public class CharacterInteraction : MonoBehaviour
             grabLocalOffset = holdPoint.InverseTransformPoint(rb.position);
         }
 
-        if (grabbedObject.CompareTag("Screwdriver"))
-        {
-            prevScrewdriverYaw = grabbedObject.transform.eulerAngles.y;
-            shakeAccum = 0f;
-            lastShakeTime = -10f;
-            targetedScrew = null;
-        }
-
         RemoveOutline(grabbedObject);
         if (itemInfoUI != null) itemInfoUI.Hide();
         aimedObject = null;
@@ -452,8 +456,6 @@ public class CharacterInteraction : MonoBehaviour
     void Drop()
     {
         ReleaseGrabbedObject(false, Vector3.zero);
-        targetedScrew = null;
-        shakeAccum = 0f;
     }
 
     void HandleThrow()
@@ -463,8 +465,6 @@ public class CharacterInteraction : MonoBehaviour
         {
             Vector3 dir = cameraTransform.forward.normalized;
             ReleaseGrabbedObject(true, dir);
-            targetedScrew = null;
-            shakeAccum = 0f;
         }
     }
 
@@ -524,59 +524,6 @@ public class CharacterInteraction : MonoBehaviour
             return;
 
         holdPoint.Rotate(cameraTransform.forward, scroll * rotateSpeed, Space.World);
-    }
-
-    void HandleScrewdriverLogic()
-    {
-        if (grabbedObject == null) return;
-        if (!grabbedObject.CompareTag("Screwdriver")) return;
-
-        Transform tip = grabbedObject.transform.Find("Tip");
-        Vector3 tipPos = tip != null ? tip.position : grabbedObject.transform.position + grabbedObject.transform.forward * 0.2f;
-        Vector3 tipDir = (tip != null) ? tip.forward : grabbedObject.transform.forward;
-
-        RaycastHit hit;
-        bool found = Physics.Raycast(tipPos, tipDir, out hit, screwDetectDistance, interactMask);
-        if (found && hit.collider.CompareTag("Screw"))
-        {
-            float angle = Vector3.Angle(tipDir, -hit.normal);
-            if (angle <= alignAngleThreshold)
-            {
-                targetedScrew = hit.collider.gameObject;
-                DetectAndAccumulateShake();
-                return;
-            }
-        }
-
-        targetedScrew = null;
-        shakeAccum = 0f;
-    }
-
-    void DetectAndAccumulateShake()
-    {
-        if (grabbedObject == null) return;
-
-        float currentYaw = grabbedObject.transform.eulerAngles.y;
-        float deltaYaw = Mathf.DeltaAngle(prevScrewdriverYaw, currentYaw);
-        float angularSpeed = Mathf.Abs(deltaYaw) / Mathf.Max(Time.deltaTime, 1e-6f);
-        prevScrewdriverYaw = currentYaw;
-
-        if (angularSpeed >= shakeSpeedThreshold)
-        {
-            shakeAccum += Time.deltaTime;
-            lastShakeTime = Time.time;
-        }
-        else if (Time.time - lastShakeTime > shakeGraceTime)
-        {
-            shakeAccum = 0f;
-        }
-
-        if (shakeAccum >= requiredShakeTime && targetedScrew != null)
-        {
-            Destroy(targetedScrew);
-            targetedScrew = null;
-            shakeAccum = 0f;
-        }
     }
 
     void AddOutline(GameObject target)
