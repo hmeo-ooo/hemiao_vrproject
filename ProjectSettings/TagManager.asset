@@ -11,6 +11,7 @@ TagManager:
   - OrganicMatter
   - CoreEnergy
   - DangerousGoods
+  - Knife
   layers:
   - Default
   - TransparentFX

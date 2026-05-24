@@ -13,6 +13,10 @@ public class ItemInformation : MonoBehaviour
     [Tooltip("\u7269\u54C1\u5206\u7C7B\uFF0C\u7528\u4E8E\u5206\u62E3\u901A\u9053\u5224\u65AD")]
     public ItemCategory category = ItemCategory.Metal;
 
+    [Header("\u5206\u62E3\u5956\u52B1")]
+    [Tooltip("\u6295\u5165\u5339\u914D\u5206\u7C7B\u7684\u901A\u9053\u65F6\u589E\u52A0\u7684\u4FE1\u7528\u70B9\u3002")]
+    public int creditsOnCorrectThrow = 10;
+
     [Header("\u5C55\u793A\u4FE1\u606F")]
     [Tooltip("\u51C6\u661F\u5BF9\u51C6\u65F6 UI \u663E\u793A\u7684\u540D\u79F0")]
     public string itemDisplayName;

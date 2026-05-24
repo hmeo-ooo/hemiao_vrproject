@@ -192,6 +192,7 @@ public class ItemSpawner : MonoBehaviour
         if (source == null) return;
 
         info.category = source.category;
+        info.creditsOnCorrectThrow = source.creditsOnCorrectThrow;
         info.itemDisplayName = source.itemDisplayName;
         info.itemDescription = source.itemDescription;
         info.overrideOutlineColor = source.overrideOutlineColor;
@@ -288,6 +289,45 @@ public class ItemSpawner : MonoBehaviour
     public void ResetTotalSpawnedCount()
     {
         _totalSpawnedCount = 0;
+    }
+
+    /// <summary>停止生成并销毁本 Spawner 跟踪的所有掉落物。</summary>
+    public void ClearAllSpawnedItems()
+    {
+        StopSpawning();
+
+        if (_activeItems.Count > 0)
+        {
+            var snapshot = new List<GameObject>(_activeItems);
+            for (int i = 0; i < snapshot.Count; i++)
+            {
+                if (snapshot[i] != null)
+                    Destroy(snapshot[i]);
+            }
+            _activeItems.Clear();
+        }
+
+        ResetTotalSpawnedCount();
+    }
+
+    /// <summary>应用关卡表中的掉落配置。</summary>
+    public void ApplyLevelSettings(LevelDefinition level)
+    {
+        if (level == null) return;
+
+        StopSpawning();
+
+        itemPrefabs = level.spawnPrefabs ?? System.Array.Empty<GameObject>();
+        spawnInterval = Mathf.Max(0.01f, level.spawnInterval);
+        itemsPerBurst = Mathf.Max(1, level.itemsPerBurst);
+        spawnSpreadRadius = level.spawnSpreadRadius;
+        burstImpulse = level.burstImpulse;
+        burstImpulseRandomness = level.burstImpulseRandomness;
+        maxActiveItems = Mathf.Max(0, level.maxActiveItems);
+        maxTotalItems = Mathf.Max(0, level.maxTotalItems);
+        autoStart = level.autoStartSpawning;
+
+        ResetTotalSpawnedCount();
     }
 
     private void OnDisable()

@@ -32,6 +32,7 @@ public class CharacterInteraction : MonoBehaviour
     public float holdDistanceEaseSpeed = 2f;
 
     public float grabHoldThreshold = 0.2f;
+
     public float throwForce = 8f;
 
     [Tooltip("开启后，滚轮在持物时旋转物体；关闭则由手部动画处理滚轮（双手上下交错）。")]
@@ -71,6 +72,7 @@ public class CharacterInteraction : MonoBehaviour
     GameObject grabbedObject;
     Rigidbody grabbedRb;
     bool grabbedWasKinematic;
+    bool grabbedUseGravity;
     bool grabbedDetectCollisions;
     RigidbodyInterpolation grabbedInterpolation;
     RigidbodyConstraints grabbedOriginalConstraints;
@@ -114,6 +116,7 @@ public class CharacterInteraction : MonoBehaviour
 
     void Update()
     {
+        if (GameplayInputGate.IsBlocked) return;
         if (cameraTransform == null) return;
 
         UpdateHoldPointDistance();
@@ -126,6 +129,7 @@ public class CharacterInteraction : MonoBehaviour
 
     void LateUpdate()
     {
+        if (GameplayInputGate.IsBlocked) return;
         if (grabbedRb == null || holdPoint == null) return;
         UpdateGrabbedTransform();
     }
@@ -274,13 +278,22 @@ public class CharacterInteraction : MonoBehaviour
             results.Add(root);
         }
 
-        // 工具类物体（例如 Screwdriver）没有 ItemInformation，也希望参与描边显示。
-        Screwdriver[] allScrewdrivers = FindObjectsOfType<Screwdriver>();
-        for (int i = 0; i < allScrewdrivers.Length; i++)
+        // 工具类物体（例如 Screwdriver / Knife）没有 ItemInformation，也希望参与描边显示。
+        CollectToolRootsInRange<Screwdriver>(camPos, maxDistSqr, seen, results);
+        CollectToolRootsInRange<Knife>(camPos, maxDistSqr, seen, results);
+
+        return results;
+    }
+
+    static void CollectToolRootsInRange<T>(Vector3 camPos, float maxDistSqr, HashSet<int> seen, List<GameObject> results)
+        where T : Component
+    {
+        T[] tools = FindObjectsOfType<T>();
+        for (int i = 0; i < tools.Length; i++)
         {
-            Screwdriver sd = allScrewdrivers[i];
-            if (sd == null) continue;
-            GameObject root = sd.gameObject;
+            T tool = tools[i];
+            if (tool == null) continue;
+            GameObject root = tool.gameObject;
             if (!root.activeInHierarchy) continue;
             if ((root.transform.position - camPos).sqrMagnitude > maxDistSqr) continue;
 
@@ -288,8 +301,6 @@ public class CharacterInteraction : MonoBehaviour
             if (!seen.Add(id)) continue;
             results.Add(root);
         }
-
-        return results;
     }
 
     static GameObject GetItemRoot(ItemInformation info)
@@ -313,7 +324,7 @@ public class CharacterInteraction : MonoBehaviour
         if (hitRb != null)
             return hitRb.gameObject;
 
-        if (collider.CompareTag("Screw") || collider.CompareTag("Screwdriver"))
+        if (collider.CompareTag("Screw") || collider.CompareTag("Screwdriver") || collider.CompareTag("Knife"))
             return collider.gameObject;
 
         return null;
@@ -426,14 +437,18 @@ public class CharacterInteraction : MonoBehaviour
         grabbedObject = rb.gameObject;
         grabbedRb = rb;
         grabbedWasKinematic = rb.isKinematic;
+        grabbedUseGravity = rb.useGravity;
         grabbedDetectCollisions = rb.detectCollisions;
         grabbedInterpolation = rb.interpolation;
         grabbedOriginalConstraints = rb.constraints;
 
         SuspendFromConveyorBelts(rb);
         rb.constraints &= ~RigidbodyConstraints.FreezeRotation;
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
+        if (!rb.isKinematic)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
         rb.isKinematic = true;
         rb.detectCollisions = false;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
@@ -451,6 +466,13 @@ public class CharacterInteraction : MonoBehaviour
         if (itemInfoUI != null) itemInfoUI.Hide();
         aimedObject = null;
         Grabbed?.Invoke(grabbedObject);
+    }
+
+    float GetGrabDistance(Rigidbody rb)
+    {
+        if (cameraTransform == null || rb == null) return holdDistance;
+        float alongView = Vector3.Dot(rb.position - cameraTransform.position, cameraTransform.forward);
+        return Mathf.Clamp(alongView, minHoldDistance, maxGrabDistance);
     }
 
     void Drop()
@@ -478,11 +500,13 @@ public class CharacterInteraction : MonoBehaviour
 
         Rigidbody releasedRb = grabbedRb;
         bool wasKinematic = grabbedWasKinematic;
+        bool useGravity = grabbedUseGravity;
         bool detectCollisions = grabbedDetectCollisions;
         RigidbodyInterpolation interpolation = grabbedInterpolation;
         RigidbodyConstraints constraints = grabbedOriginalConstraints;
 
         releasedRb.isKinematic = wasKinematic;
+        releasedRb.useGravity = useGravity;
         releasedRb.detectCollisions = detectCollisions;
         releasedRb.interpolation = interpolation;
         releasedRb.constraints = constraints;
@@ -504,13 +528,6 @@ public class CharacterInteraction : MonoBehaviour
         grabbedRb = null;
         grabFollowVelocity = Vector3.zero;
         UnsuspendFromConveyorBelts(releasedRb);
-    }
-
-    float GetGrabDistance(Rigidbody rb)
-    {
-        if (cameraTransform == null || rb == null) return holdDistance;
-        float alongView = Vector3.Dot(rb.position - cameraTransform.position, cameraTransform.forward);
-        return Mathf.Clamp(alongView, minHoldDistance, maxGrabDistance);
     }
 
     void HandleScrollRotate()

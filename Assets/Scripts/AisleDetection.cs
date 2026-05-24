@@ -28,6 +28,38 @@ public class AisleDetection : MonoBehaviour
     {
         if (other == null) return;
 
+        Rigidbody rb = other.attachedRigidbody ?? other.GetComponentInParent<Rigidbody>();
+        if (rb == null)
+        {
+            if (debugLogging) Debug.Log($"[AisleDetection] {other.name}: no rigidbody, ignored.");
+            return;
+        }
+
+        float speed = rb.velocity.magnitude;
+        if (speed < minImpactSpeed)
+        {
+            if (debugLogging) Debug.Log($"[AisleDetection] {other.name} speed {speed:F2} < {minImpactSpeed:F2}, ignored.");
+            return;
+        }
+
+        Cuttable cuttable = other.GetComponentInParent<Cuttable>();
+        if (cuttable != null && cuttable.IsStillAssembled)
+        {
+            int assemblyId = cuttable.gameObject.GetInstanceID();
+            if (processedInstanceIds.Contains(assemblyId))
+            {
+                if (debugLogging) Debug.Log($"[AisleDetection] {cuttable.name} assembly already processed.");
+                return;
+            }
+
+            MarkAssemblyProcessed(cuttable.gameObject);
+            if (debugLogging)
+                Debug.Log($"[AisleDetection] {cuttable.name} abandoned mixture, +{cuttable.abandonedMixtureCredits} credits.");
+
+            cuttable.HandleAbandonedMixtureInAisle();
+            return;
+        }
+
         var info = other.GetComponentInParent<ItemInformation>();
         if (info == null)
         {
@@ -42,28 +74,15 @@ public class AisleDetection : MonoBehaviour
             return;
         }
 
-        Rigidbody rb = other.attachedRigidbody ?? other.GetComponentInParent<Rigidbody>();
-        if (rb == null)
-        {
-            if (debugLogging) Debug.Log($"[AisleDetection] {info.gameObject.name}: no rigidbody, ignored.");
-            return;
-        }
-
-        float speed = rb.velocity.magnitude;
-        if (speed < minImpactSpeed)
-        {
-            if (debugLogging) Debug.Log($"[AisleDetection] {info.gameObject.name} speed {speed:F2} < {minImpactSpeed:F2}, ignored.");
-            return;
-        }
-
         if (debugLogging)
             Debug.Log($"[AisleDetection] hit {info.gameObject.name} category={info.category} aisle={aisleCategory} speed={speed:F2}");
 
         if (info.category == aisleCategory)
         {
-            if (debugLogging) Debug.Log("[AisleDetection] match, +10 credits.");
-            if (CreditManager.Instance != null)
-                CreditManager.Instance.AddCredits(10);
+            if (debugLogging)
+                Debug.Log($"[AisleDetection] match, +{info.creditsOnCorrectThrow} credits.");
+            if (CreditManager.Instance != null && info.creditsOnCorrectThrow != 0)
+                CreditManager.Instance.AddCredits(info.creditsOnCorrectThrow);
 
             if (consumeItemOnAccept)
                 Destroy(info.gameObject);
@@ -77,5 +96,16 @@ public class AisleDetection : MonoBehaviour
         }
 
         processedInstanceIds.Add(id);
+    }
+
+    void MarkAssemblyProcessed(GameObject assemblyRoot)
+    {
+        processedInstanceIds.Add(assemblyRoot.GetInstanceID());
+        ItemInformation[] parts = assemblyRoot.GetComponentsInChildren<ItemInformation>(true);
+        for (int i = 0; i < parts.Length; i++)
+        {
+            if (parts[i] != null)
+                processedInstanceIds.Add(parts[i].gameObject.GetInstanceID());
+        }
     }
 }

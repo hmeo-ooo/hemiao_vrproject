@@ -13,6 +13,7 @@ public class CreditManager : MonoBehaviour
 
     string subtitle;
     float subtitleEndTime;
+    Color subtitleColor = Color.red;
 
     void Awake()
     {
@@ -38,6 +39,16 @@ public class CreditManager : MonoBehaviour
         NotifyCreditsChanged();
     }
 
+    /// <summary>消耗信用点；余额不足时返回 false。</summary>
+    public bool TrySpendCredits(int amount)
+    {
+        if (amount <= 0) return true;
+        if (credits < amount) return false;
+        credits -= amount;
+        NotifyCreditsChanged();
+        return true;
+    }
+
     void NotifyCreditsChanged()
     {
         OnCreditsChanged?.Invoke(credits);
@@ -45,7 +56,13 @@ public class CreditManager : MonoBehaviour
 
     public void ShowSubtitle(string text, float duration = 2f)
     {
+        ShowSubtitle(text, duration, Color.red);
+    }
+
+    public void ShowSubtitle(string text, float duration, Color color)
+    {
         subtitle = text;
+        subtitleColor = color;
         subtitleEndTime = Time.time + Mathf.Max(0.1f, duration);
     }
 
@@ -57,7 +74,7 @@ public class CreditManager : MonoBehaviour
             {
                 alignment = TextAnchor.LowerCenter,
                 fontSize = 22,
-                normal = { textColor = Color.red }
+                normal = { textColor = subtitleColor }
             };
             float h = 40f;
             GUI.Label(new Rect(0, Screen.height - h - 10f, Screen.width, h), subtitle, subStyle);

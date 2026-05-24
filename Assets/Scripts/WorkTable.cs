@@ -40,6 +40,10 @@ public class WorkTable : MonoBehaviour
     [Tooltip("吸附到锚点的平滑时间。")]
     public float snapSmoothTime = 0.1f;
 
+    [Header("取出后状态")]
+    [Tooltip("玩家把物品从 AnchorPoint 拖出后，强制让物品变回普通可投掷状态（非 kinematic + 启用重力）。\n关闭则保留物品被放置前的原始 Rigidbody 状态。")]
+    public bool forceThrowableOnRetrieval = true;
+
     [Header("右键拖拽旋转")]
     [Tooltip("鼠标水平拖拽的旋转灵敏度（每单位 Mouse X 旋转的角度）。")]
     public float dragRotateYawSpeed = 6f;
@@ -66,6 +70,11 @@ public class WorkTable : MonoBehaviour
     bool placedOriginalUseGravity;
     RigidbodyInterpolation placedOriginalInterpolation;
     RigidbodyConstraints placedOriginalConstraints;
+
+    /// <summary>刚从桌面取走、等待松手/扔出后恢复物理状态的物体。</summary>
+    GameObject pendingRetrieval;
+    bool pendingOriginalKinematic;
+    bool pendingOriginalUseGravity;
 
     Vector3 placedSnapVelocity;
     Quaternion placedDesiredRotation = Quaternion.identity;
@@ -151,16 +160,23 @@ public class WorkTable : MonoBehaviour
     {
         heldByPlayer = obj;
         if (obj != null && obj == placedItem)
+        {
+            pendingRetrieval = obj;
+            pendingOriginalKinematic = placedOriginalKinematic;
+            pendingOriginalUseGravity = placedOriginalUseGravity;
             FinalizeRetrieval();
+        }
     }
 
     void OnPlayerReleased()
     {
+        ApplyRetrievalPhysics();
         TryPlaceOnRelease();
     }
 
     void OnPlayerThrown()
     {
+        ApplyRetrievalPhysics();
         heldByPlayer = null;
         currentCandidate = null;
     }
@@ -180,6 +196,7 @@ public class WorkTable : MonoBehaviour
         if (go == null) return false;
         // 螺丝刀等"工具类"物体不应被放置到锚点上，它们有自己的归位逻辑。
         if (go.GetComponent<Screwdriver>() != null) return false;
+        if (go.GetComponent<Knife>() != null) return false;
         return true;
     }
 
@@ -348,14 +365,53 @@ public class WorkTable : MonoBehaviour
     void RestoreOriginalRbState()
     {
         if (placedRb == null) return;
-        placedRb.isKinematic = placedOriginalKinematic;
-        placedRb.useGravity = placedOriginalUseGravity;
-        placedRb.interpolation = placedOriginalInterpolation;
-        placedRb.constraints = placedOriginalConstraints;
-        if (!placedRb.isKinematic)
+        ApplyThrowableState(
+            placedRb,
+            placedOriginalKinematic,
+            placedOriginalUseGravity,
+            placedOriginalInterpolation,
+            placedOriginalConstraints);
+    }
+
+    void ApplyRetrievalPhysics()
+    {
+        if (pendingRetrieval == null) return;
+
+        Rigidbody rb = pendingRetrieval.GetComponent<Rigidbody>();
+        if (rb != null)
         {
-            placedRb.velocity = Vector3.zero;
-            placedRb.angularVelocity = Vector3.zero;
+            ApplyThrowableState(
+                rb,
+                pendingOriginalKinematic,
+                pendingOriginalUseGravity,
+                rb.interpolation,
+                rb.constraints);
+        }
+
+        pendingRetrieval = null;
+    }
+
+    void ApplyThrowableState(
+        Rigidbody rb,
+        bool originalKinematic,
+        bool originalUseGravity,
+        RigidbodyInterpolation originalInterpolation,
+        RigidbodyConstraints originalConstraints)
+    {
+        if (rb == null) return;
+
+        bool kinematic = forceThrowableOnRetrieval ? false : originalKinematic;
+        bool useGravity = forceThrowableOnRetrieval ? true : originalUseGravity;
+
+        rb.isKinematic = kinematic;
+        rb.useGravity = useGravity;
+        rb.interpolation = originalInterpolation;
+        rb.constraints = originalConstraints;
+        rb.detectCollisions = true;
+        if (!rb.isKinematic)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
     }
 
@@ -376,11 +432,31 @@ public class WorkTable : MonoBehaviour
         t.rotation = Quaternion.Slerp(t.rotation, placedDesiredRotation, lerp);
     }
 
+    /// <summary>
+    /// Cuttable 切割时调用：停止桌面吸附，否则刚体会与 SnapPlacedToAnchor 冲突导致震动且子物体无法掉落。
+    /// </summary>
+    public void ReleasePlacedItemForCut(GameObject item)
+    {
+        if (placedItem == null || item == null) return;
+        if (item != placedItem && item.transform.root != placedItem.transform.root)
+            return;
+
+        if (placedItem.transform.parent == anchorPoint)
+            placedItem.transform.SetParent(placedOriginalParent, true);
+
+        ClearPlacedState();
+    }
+
     void FinalizeRetrieval()
     {
         if (placedItem != null && placedItem.transform.parent == anchorPoint)
             placedItem.transform.SetParent(placedOriginalParent, true);
 
+        ClearPlacedState();
+    }
+
+    void ClearPlacedState()
+    {
         placedItem = null;
         placedRb = null;
         placedOriginalParent = null;
