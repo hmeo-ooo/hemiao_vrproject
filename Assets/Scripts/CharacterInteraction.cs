@@ -125,6 +125,16 @@ public class CharacterInteraction : MonoBehaviour
         HandleLeftPressLogic();
         HandleThrow();
         HandleScrollRotate();
+        HandleInspectionInput();
+    }
+
+    void HandleInspectionInput()
+    {
+        if (grabbedObject == null) return;
+        var insp = grabbedObject.GetComponent<InspectableItem>();
+        if (insp == null) return;
+        if (!Input.GetKeyDown(insp.inspectKey)) return;
+        InspectionView.Instance.BeginInspection(grabbedObject, this);
     }
 
     void LateUpdate()
@@ -306,6 +316,18 @@ public class CharacterInteraction : MonoBehaviour
     static GameObject GetItemRoot(ItemInformation info)
     {
         if (info == null) return null;
+
+        // 如果该 info 所在物体属于某个 InspectableItem 的层级（无论是 InspectableItem 本身还是
+        // 其某个 detachable 子物体），统一返回 InspectableItem 所挂 Rigidbody 的节点，
+        // 这样准星对子部件时也会把"整个可审视组合"作为抓取目标。
+        InspectableItem insp = info.GetComponentInParent<InspectableItem>();
+        if (insp != null)
+        {
+            Rigidbody iRb = insp.GetComponent<Rigidbody>();
+            if (iRb == null) iRb = insp.GetComponentInParent<Rigidbody>();
+            return iRb != null ? iRb.gameObject : insp.gameObject;
+        }
+
         Rigidbody rb = info.GetComponentInParent<Rigidbody>();
         return rb != null ? rb.gameObject : info.gameObject;
     }
@@ -313,6 +335,15 @@ public class CharacterInteraction : MonoBehaviour
     static GameObject ResolveInteractableRoot(Collider collider)
     {
         if (collider == null) return null;
+
+        // 优先按 InspectableItem 解析：碰到 detachable 子件或父体的 collider 都视为整体。
+        InspectableItem insp = collider.GetComponentInParent<InspectableItem>();
+        if (insp != null)
+        {
+            Rigidbody iRb = insp.GetComponent<Rigidbody>();
+            if (iRb == null) iRb = insp.GetComponentInParent<Rigidbody>();
+            return iRb != null ? iRb.gameObject : insp.gameObject;
+        }
 
         var info = collider.GetComponentInParent<ItemInformation>();
         if (info != null)
@@ -488,6 +519,16 @@ public class CharacterInteraction : MonoBehaviour
             Vector3 dir = cameraTransform.forward.normalized;
             ReleaseGrabbedObject(true, dir);
         }
+    }
+
+    /// <summary>
+    /// 外部脚本（如 DangerousGoodsBehavior）在物品即将被销毁前调用，先安全释放。
+    /// </summary>
+    public void ForceReleaseIfHolding(GameObject target)
+    {
+        if (grabbedObject == null || target == null) return;
+        if (grabbedObject != target) return;
+        ReleaseGrabbedObject(false, Vector3.zero);
     }
 
     void ReleaseGrabbedObject(bool applyThrow, Vector3 throwDirection)
@@ -716,6 +757,16 @@ public class CharacterInteraction : MonoBehaviour
     static GameObject GetGrabTargetFromHit(RaycastHit hit)
     {
         if (hit.collider == null) return null;
+
+        // 同 ResolveInteractableRoot：命中 InspectableItem 层级时统一返回组合根。
+        InspectableItem insp = hit.collider.GetComponentInParent<InspectableItem>();
+        if (insp != null)
+        {
+            Rigidbody iRb = insp.GetComponent<Rigidbody>();
+            if (iRb == null) iRb = insp.GetComponentInParent<Rigidbody>();
+            return iRb != null ? iRb.gameObject : insp.gameObject;
+        }
+
         var rb = hit.rigidbody != null
             ? hit.rigidbody
             : hit.collider.GetComponentInParent<Rigidbody>();

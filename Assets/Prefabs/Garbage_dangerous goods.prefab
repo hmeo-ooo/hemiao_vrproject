@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &2901559934276544025
+--- !u!1 &4843321675143679443
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,52 +8,50 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 7295773457784468286}
-  - component: {fileID: 3130856279714352555}
-  - component: {fileID: 5787699720913157516}
-  - component: {fileID: 8695983948070816888}
-  - component: {fileID: 1513569263690875784}
-  - component: {fileID: 7719244747864290403}
-  - component: {fileID: 3848192349449515370}
-  - component: {fileID: 5312198686463295223}
-  - component: {fileID: 7722072243451373796}
+  - component: {fileID: 7134121156551106839}
+  - component: {fileID: 4353400554432560630}
+  - component: {fileID: 4896063369024296321}
+  - component: {fileID: 433257481963254526}
+  - component: {fileID: 7982132996567729051}
+  - component: {fileID: 3851920620170368970}
+  - component: {fileID: 9012345670000000001}
   m_Layer: 0
-  m_Name: organic matter
-  m_TagString: Metal
+  m_Name: Garbage_dangerous goods
+  m_TagString: DangerousGoods
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &7295773457784468286
+--- !u!4 &7134121156551106839
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
+  m_GameObject: {fileID: 4843321675143679443}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -8.41, y: 0.62, z: 0}
-  m_LocalScale: {x: 0.37, y: 0.37, z: 0.37}
+  m_LocalScale: {x: 0.84000003, y: 0.84000003, z: 0.84000003}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &3130856279714352555
+--- !u!33 &4353400554432560630
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &5787699720913157516
+  m_GameObject: {fileID: 4843321675143679443}
+  m_Mesh: {fileID: -287529621203424915, guid: b86d64877b7c03846bef4da95936b581, type: 3}
+--- !u!23 &4896063369024296321
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
+  m_GameObject: {fileID: 4843321675143679443}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -89,34 +87,13 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &8695983948070816888
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!54 &1513569263690875784
+--- !u!54 &433257481963254526
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
+  m_GameObject: {fileID: 4843321675143679443}
   serializedVersion: 4
   m_Mass: 1
   m_Drag: 0
@@ -137,75 +114,70 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &7719244747864290403
+--- !u!114 &7982132996567729051
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
+  m_GameObject: {fileID: 4843321675143679443}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ab5ea45c845d6bd4aae59472992c2522, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  category: 1
-  creditsOnCorrectThrow: 10
-  itemDisplayName: organic matter
-  itemDescription: "\u6709\u673A\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u6709\u673A\u901A\u9053\u3002"
+  category: 3
+  complexity: 2
+  creditsOnCorrectThrow: 500
+  itemDisplayName: dangerous goods
+  itemDescription: "\u5371\u9669\u54C1\uFF0C\u6295\u5165\u5371\u9669\u901A\u9053\u3002"
   overrideOutlineColor: 0
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
---- !u!114 &3848192349449515370
+--- !u!64 &3851920620170368970
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4843321675143679443}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -287529621203424915, guid: b86d64877b7c03846bef4da95936b581, type: 3}
+--- !u!114 &9012345670000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
+  m_GameObject: {fileID: 4843321675143679443}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc39a468fb676d94fad9d9cbf8d41ac6, type: 3}
+  m_Script: {fileID: 11500000, guid: d7e2b4f5a3c849b1a8e6c7d5b4a39201, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sideOffset: 0.65
-  panelSize: {x: 300, y: 130}
-  backgroundColor: {r: 0.22, g: 0.22, b: 0.22, a: 0.9}
-  textColor: {r: 1, g: 1, b: 1, a: 1}
-  nameFontSize: 22
-  descriptionFontSize: 16
---- !u!114 &5312198686463295223
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc39a468fb676d94fad9d9cbf8d41ac6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sideOffset: 0.65
-  panelSize: {x: 300, y: 130}
-  backgroundColor: {r: 0.22, g: 0.22, b: 0.22, a: 0.9}
-  textColor: {r: 1, g: 1, b: 1, a: 1}
-  nameFontSize: 22
-  descriptionFontSize: 16
---- !u!114 &7722072243451373796
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc39a468fb676d94fad9d9cbf8d41ac6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sideOffset: 0.65
-  panelSize: {x: 300, y: 130}
-  backgroundColor: {r: 0.22, g: 0.22, b: 0.22, a: 0.9}
-  textColor: {r: 1, g: 1, b: 1, a: 1}
-  nameFontSize: 22
-  descriptionFontSize: 16
+  untouchedFuseSeconds: 10
+  touchedFuseSeconds: 5
+  explosionRadius: 1
+  explosionImpulse: 8
+  affectedLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  onlyAffectItems: 1
+  blinkColor: {r: 1, g: 0.1, b: 0.1, a: 1}
+  blinkEmissionIntensity: 3
+  blinkInterval: 0.8
+  panicSpeedMultiplier: 0.5
+  detectPlayerCollision: 1
+  debugLog: 0

@@ -179,6 +179,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   category: 0
+  complexity: 0
   creditsOnCorrectThrow: 10
   itemDisplayName: ScrewDriver
   itemDescription: "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002"

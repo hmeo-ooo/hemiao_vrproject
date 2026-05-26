@@ -75,8 +75,11 @@ public class Cuttable : MonoBehaviour
         if (CreditManager.Instance != null)
         {
             CreditManager.Instance.AddCredits(abandonedMixtureCredits);
+            string msg = string.IsNullOrEmpty(abandonedMixtureMessage)
+                ? $"+{abandonedMixtureCredits} credits"
+                : $"{abandonedMixtureMessage} (+{abandonedMixtureCredits})";
             CreditManager.Instance.ShowSubtitle(
-                abandonedMixtureMessage,
+                msg,
                 2f,
                 new Color(1f, 0.92f, 0.2f, 1f));
         }

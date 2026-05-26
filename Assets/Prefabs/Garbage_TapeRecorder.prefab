@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4266267683421312212}
   - component: {fileID: 3015745953419550501}
   m_Layer: 0
-  m_Name: MENTAL
+  m_Name: core
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 2376477128592598935}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.67, y: 0, z: 0}
   m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -120,9 +120,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab5ea45c845d6bd4aae59472992c2522, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  category: 0
-  creditsOnCorrectThrow: 10
-  itemDisplayName: MENTAL
+  category: 2
+  complexity: 0
+  creditsOnCorrectThrow: 200
+  itemDisplayName: core
   itemDescription: "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002"
   overrideOutlineColor: 0
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
@@ -138,12 +139,12 @@ GameObject:
   - component: {fileID: 8674646150418187479}
   - component: {fileID: 4470710341882131421}
   - component: {fileID: 1281172812966271345}
-  - component: {fileID: 5433850714283747972}
   - component: {fileID: 9193759685352562859}
   - component: {fileID: 3425142691266573534}
+  - component: {fileID: 6831326113387395001}
   m_Layer: 0
-  m_Name: TapeRecorder
-  m_TagString: Metal
+  m_Name: Garbage_TapeRecorder
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -171,7 +172,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3704749408383989885}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 4573940525544968709, guid: db95e932d0145114787c306d497bcd30, type: 3}
 --- !u!23 &4470710341882131421
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -230,34 +231,13 @@ MonoBehaviour:
   contentsRoot: {fileID: 1229566676591629400}
   shatterEffectPrefab: {fileID: 0}
   contentSeparateImpulse: 0.35
-  separateDropInitialSpeed: 0
+  separateDropInitialSpeed: 0.1
   destroySelfAfterCut: 0
   abandonedMixtureMessage: Abandoned mixture
   abandonedMixtureCredits: 1
   onCut:
     m_PersistentCalls:
       m_Calls: []
---- !u!65 &5433850714283747972
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3704749408383989885}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &9193759685352562859
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -297,9 +277,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab5ea45c845d6bd4aae59472992c2522, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  category: 2
-  creditsOnCorrectThrow: 10
-  itemDisplayName: core energy
+  category: 0
+  complexity: 1
+  creditsOnCorrectThrow: 100
+  itemDisplayName: metal
   itemDescription: "\u6838\u5FC3\u80FD\u6E90\uFF0C\u6295\u5165\u6838\u5FC3\u80FD\u6E90\u901A\u9053\u3002"
   overrideOutlineColor: 0
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!64 &6831326113387395001
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3704749408383989885}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4573940525544968709, guid: db95e932d0145114787c306d497bcd30, type: 3}

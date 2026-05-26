@@ -79,10 +79,18 @@ public class AisleDetection : MonoBehaviour
 
         if (info.category == aisleCategory)
         {
+            int delta = info.creditsOnCorrectThrow;
             if (debugLogging)
-                Debug.Log($"[AisleDetection] match, +{info.creditsOnCorrectThrow} credits.");
-            if (CreditManager.Instance != null && info.creditsOnCorrectThrow != 0)
-                CreditManager.Instance.AddCredits(info.creditsOnCorrectThrow);
+                Debug.Log($"[AisleDetection] match {info.gameObject.name} category={info.category}, +{delta} credits (prefab value on instance).");
+            if (CreditManager.Instance != null)
+            {
+                if (delta != 0)
+                    CreditManager.Instance.AddCredits(delta);
+                CreditManager.Instance.ShowSubtitle(
+                    delta >= 0 ? $"+{delta} credits" : $"{delta} credits",
+                    1.5f,
+                    new Color(0.4f, 1f, 0.4f, 1f));
+            }
 
             if (consumeItemOnAccept)
                 Destroy(info.gameObject);

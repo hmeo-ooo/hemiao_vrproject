@@ -68,6 +68,15 @@ public class LevelSessionController : MonoBehaviour
         BeginRound();
     }
 
+    /// <summary>
+    /// 玩家在「选择关卡」面板中点了某关：加载该关，并停留在准备界面。
+    /// </summary>
+    public void OnLevelPicked(int levelIndex)
+    {
+        if (_roundActive) return;
+        PrepareLevelAndShowHub(levelIndex);
+    }
+
     public void OnRepayDebtButtonClicked()
     {
         if (DebtManager.Instance == null)

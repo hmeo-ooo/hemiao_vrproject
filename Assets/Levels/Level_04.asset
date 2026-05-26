@@ -28,5 +28,9 @@ MonoBehaviour:
   maxActiveItems: 9
   maxTotalItems: 15
   autoStartSpawning: 1
+  complexityComposition:
+    basicWeight: 5
+    compositeWeight: 3
+    dangerousWeight: 0
   sceneProps: []
   designNotes: Configure in Inspector.

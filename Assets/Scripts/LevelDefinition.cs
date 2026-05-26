@@ -1,6 +1,35 @@
 using UnityEngine;
 
 /// <summary>
+/// 每关复杂度构成。权重越大该类物品越易被抽到；全部为 0 时退化为随机抽取。
+/// </summary>
+[System.Serializable]
+public class LevelComplexityComposition
+{
+    [Tooltip("基础物（Basic）权重。")]
+    [Min(0f)] public float basicWeight = 1f;
+
+    [Tooltip("复合物（Composite）权重。")]
+    [Min(0f)] public float compositeWeight = 0f;
+
+    [Tooltip("高危品（Dangerous）权重。")]
+    [Min(0f)] public float dangerousWeight = 0f;
+
+    public float TotalWeight => basicWeight + compositeWeight + dangerousWeight;
+
+    public float GetWeight(ItemInformation.ItemComplexity c)
+    {
+        switch (c)
+        {
+            case ItemInformation.ItemComplexity.Basic: return basicWeight;
+            case ItemInformation.ItemComplexity.Composite: return compositeWeight;
+            case ItemInformation.ItemComplexity.Dangerous: return dangerousWeight;
+            default: return 0f;
+        }
+    }
+}
+
+/// <summary>
 /// 单关配置：掉落物列表、生成参数、场上静态道具摆放。
 /// 在 Project 窗口：Create → Hemiao → Level Definition
 /// </summary>
@@ -19,7 +48,12 @@ public class LevelDefinition : ScriptableObject
     public float levelDurationSeconds = 120f;
 
     [Header("掉落生成（ItemSpawner）")]
+    [Tooltip("本关候选掉落物预制体（应包含 ItemInformation 组件）。")]
     public GameObject[] spawnPrefabs;
+
+    [Header("复杂度构成")]
+    [Tooltip("按 Basic/Composite/Dangerous 权重从 spawnPrefabs 中抽取。若某权重对应的预制体不在列表里，会跳过该权重。")]
+    public LevelComplexityComposition complexityComposition = new LevelComplexityComposition();
 
     public float spawnInterval = 1f;
 

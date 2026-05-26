@@ -10,8 +10,24 @@ public class ItemInformation : MonoBehaviour
         DangerousGoods
     }
 
+    /// <summary>
+    /// 物品复杂度，用于关卡按权重抽取掉落物。
+    /// Basic：基础单体物（金属/有机/核心能源单件等）。
+    /// Composite：复合物（如可拆解/可切割的多部件物）。
+    /// Dangerous：高危品（危险品，错误处理风险更高）。
+    /// </summary>
+    public enum ItemComplexity
+    {
+        Basic,
+        Composite,
+        Dangerous
+    }
+
     [Tooltip("\u7269\u54C1\u5206\u7C7B\uFF0C\u7528\u4E8E\u5206\u62E3\u901A\u9053\u5224\u65AD")]
     public ItemCategory category = ItemCategory.Metal;
+
+    [Tooltip("\u7269\u54C1\u590D\u6742\u5EA6\u3002\u5173\u5361\u53EF\u6309\u6BD4\u4F8B\u62BD\u53D6\u6BCF\u79CD\u590D\u6742\u5EA6\u3002")]
+    public ItemComplexity complexity = ItemComplexity.Basic;
 
     [Header("\u5206\u62E3\u5956\u52B1")]
     [Tooltip("\u6295\u5165\u5339\u914D\u5206\u7C7B\u7684\u901A\u9053\u65F6\u589E\u52A0\u7684\u4FE1\u7528\u70B9\u3002")]
