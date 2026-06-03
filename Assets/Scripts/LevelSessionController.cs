@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -10,6 +11,7 @@ public class LevelSessionController : MonoBehaviour
     [Header("引用")]
     public LevelManager levelManager;
     public LevelHubUI levelHubUI;
+    public LevelTutorialUI levelTutorialUI;
     public CountDownTimer countDownTimer;
 
     [Tooltip("游戏中显示的面板（关卡号、倒计时、余额等）；准备界面时隐藏。")]
@@ -28,12 +30,20 @@ public class LevelSessionController : MonoBehaviour
     Canvas _gameplayHudCanvas;
     Vector3 _gameplayHudCanvasScale = Vector3.one;
 
+    // 干扰排程：回合开始后从 0 计时；pending 中元素在到达 triggerAtSeconds 时
+    // 被搬运到 active；active 中若 durationSeconds>0 且到时间则自动 Stop。
+    float _roundElapsed;
+    readonly List<LevelInterferenceConfig> _pendingInterferences = new List<LevelInterferenceConfig>();
+    readonly List<LevelInterferenceConfig> _activeInterferences = new List<LevelInterferenceConfig>();
+
     void Awake()
     {
         if (levelManager == null)
             levelManager = LevelManager.Instance;
         if (levelHubUI == null)
             levelHubUI = GetComponent<LevelHubUI>();
+        if (levelTutorialUI == null)
+            levelTutorialUI = GetComponent<LevelTutorialUI>();
         if (countDownTimer == null)
             countDownTimer = FindObjectOfType<CountDownTimer>();
     }
@@ -65,7 +75,44 @@ public class LevelSessionController : MonoBehaviour
     public void OnEnterLevelButtonClicked()
     {
         if (_roundActive) return;
+        TryShowTutorialOrBeginRound();
+    }
+
+    void TryShowTutorialOrBeginRound()
+    {
+        if (levelManager == null)
+            levelManager = LevelManager.Instance;
+
+        LevelDefinition def = levelManager != null ? levelManager.CurrentLevel : null;
+        if (ShouldShowTutorial(def))
+        {
+            levelHubUI?.Hide();
+            levelTutorialUI.Show(def, OnTutorialConfirmed, OnTutorialBack);
+            GameplayInputGate.SetBlocked(true);
+            return;
+        }
+
         BeginRound();
+    }
+
+    void OnTutorialConfirmed()
+    {
+        levelTutorialUI?.Hide();
+        BeginRound();
+    }
+
+    void OnTutorialBack()
+    {
+        levelTutorialUI?.Hide();
+        GameplayInputGate.SetBlocked(true);
+        levelHubUI?.Show();
+    }
+
+    static bool ShouldShowTutorial(LevelDefinition def)
+    {
+        if (def == null || !def.showTutorialBeforeLevel || !def.HasTutorialContent)
+            return false;
+        return true;
     }
 
     /// <summary>
@@ -168,11 +215,14 @@ public class LevelSessionController : MonoBehaviour
             float duration = Mathf.Max(1f, levelManager.CurrentLevel.levelDurationSeconds);
             countDownTimer.SetDuration(duration, true);
         }
+
+        BeginRoundInterferences(levelManager.CurrentLevel);
     }
 
     public void EndRoundAndShowHub(bool tryAdvanceLevel)
     {
         _roundActive = false;
+        StopAllInterferences();
         levelManager?.EndLevelGameplay();
 
         if (countDownTimer != null)
@@ -187,6 +237,118 @@ public class LevelSessionController : MonoBehaviour
         }
 
         PrepareLevelAndShowHub(nextIndex);
+    }
+
+    void Update()
+    {
+        if (!_roundActive) return;
+        _roundElapsed += Time.deltaTime;
+        TickInterferences();
+    }
+
+    // ------------------------------------------------------------------
+    // 关卡干扰排程
+    // ------------------------------------------------------------------
+
+    void BeginRoundInterferences(LevelDefinition def)
+    {
+        _roundElapsed = 0f;
+        StopAllInterferences();
+
+        if (def == null || def.interferences == null) return;
+        for (int i = 0; i < def.interferences.Length; i++)
+        {
+            var cfg = def.interferences[i];
+            if (cfg == null) continue;
+            _pendingInterferences.Add(cfg);
+        }
+    }
+
+    void TickInterferences()
+    {
+        for (int i = _pendingInterferences.Count - 1; i >= 0; i--)
+        {
+            var cfg = _pendingInterferences[i];
+            if (_roundElapsed >= cfg.triggerAtSeconds)
+            {
+                StartInterference(cfg);
+                _pendingInterferences.RemoveAt(i);
+                _activeInterferences.Add(cfg);
+            }
+        }
+
+        for (int i = _activeInterferences.Count - 1; i >= 0; i--)
+        {
+            var cfg = _activeInterferences[i];
+
+            // 玩家提前结束（例如 TVStaticOverlay 连续按 E 取消后），把它从活跃列表里移除
+            if (HasInterferenceBeenDismissedExternally(cfg))
+            {
+                _activeInterferences.RemoveAt(i);
+                continue;
+            }
+
+            if (cfg.durationSeconds <= 0f) continue; // 持续到回合结束
+            if (_roundElapsed >= cfg.triggerAtSeconds + cfg.durationSeconds)
+            {
+                StopInterference(cfg);
+                _activeInterferences.RemoveAt(i);
+            }
+        }
+    }
+
+    bool HasInterferenceBeenDismissedExternally(LevelInterferenceConfig cfg)
+    {
+        switch (cfg.type)
+        {
+            case LevelInterferenceConfig.InterferenceType.TVStaticOverlay:
+                return !TVStaticOverlay.IsActive;
+        }
+        return false;
+    }
+
+    void StartInterference(LevelInterferenceConfig cfg)
+    {
+        switch (cfg.type)
+        {
+            case LevelInterferenceConfig.InterferenceType.TVStaticOverlay:
+                TVStaticOverlay.Instance.Show(new TVStaticOverlayParams
+                {
+                    intensity = cfg.intensity,
+                    noiseFps = cfg.noiseFps,
+                    textureSize = cfg.noiseTextureSize,
+                    tint = cfg.tint,
+                    centerSprite = cfg.centerPatternSprite,
+                    centerSize = cfg.centerPatternSize,
+                    centerPulseScale = cfg.centerPatternPulseScale,
+                    centerPulseFrequencyHz = cfg.centerPatternPulseFrequencyHz,
+                    centerRestColor = cfg.centerPatternColor,
+                    cancelKey = cfg.cancelKey,
+                    pressesToCancel = cfg.pressesToCancel,
+                    flashColor = cfg.flashColor,
+                    flashDuration = cfg.flashDuration,
+                });
+                break;
+        }
+    }
+
+    void StopInterference(LevelInterferenceConfig cfg)
+    {
+        switch (cfg.type)
+        {
+            case LevelInterferenceConfig.InterferenceType.TVStaticOverlay:
+                if (TVStaticOverlay.IsActive)
+                    TVStaticOverlay.Instance.Hide();
+                break;
+        }
+    }
+
+    void StopAllInterferences()
+    {
+        for (int i = 0; i < _activeInterferences.Count; i++)
+            StopInterference(_activeInterferences[i]);
+        _activeInterferences.Clear();
+        _pendingInterferences.Clear();
     }
 
     void CacheGameplayHudCanvas()

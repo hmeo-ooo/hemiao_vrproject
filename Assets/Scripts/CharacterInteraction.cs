@@ -134,6 +134,9 @@ public class CharacterInteraction : MonoBehaviour
         var insp = grabbedObject.GetComponent<InspectableItem>();
         if (insp == null) return;
         if (!Input.GetKeyDown(insp.inspectKey)) return;
+        // 干扰（如 TVStaticOverlay）正在显示时，把 E 让给“取消干扰”计数，
+        // 避免一边按 E 一边意外进入审视。
+        if (TVStaticOverlay.IsActive) return;
         InspectionView.Instance.BeginInspection(grabbedObject, this);
     }
 

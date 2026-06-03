@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -17,6 +18,16 @@ public class LevelManager : MonoBehaviour
 
     [Tooltip("本关静态道具生成到此节点下；留空则使用自身 Transform。")]
     public Transform propsRoot;
+
+    [Header("分拣通道")]
+    [Tooltip("按关卡配置生成的通道实例挂在此节点下；留空则使用 LevelManager 自身 Transform。")]
+    public Transform aislesRoot;
+
+    [Tooltip("默认通道预制体（需含 AisleDetection + Collider）。留空时改为 reposition 场景中已有的通道物体。")]
+    public GameObject defaultAislePrefab;
+
+    [Tooltip("关卡定义了通道列表时，是否隐藏场景中原本摆好的通道（避免重复）。")]
+    public bool hideSceneAislesWhenUsingLevelLayout = true;
 
     [Header("启动")]
     [Tooltip("进入场景时仅准备关卡数据（不开始掉落）；通常由 LevelSessionController 接管流程。")]
@@ -38,6 +49,9 @@ public class LevelManager : MonoBehaviour
             : null;
 
     public int LevelCount => levels != null ? levels.Length : 0;
+
+    AisleDetection[] sceneBakedAisles;
+    readonly List<GameObject> spawnedAisles = new List<GameObject>();
 
     public int ResolveLevelIndex(int preferredIndex)
     {
@@ -77,8 +91,13 @@ public class LevelManager : MonoBehaviour
         if (propsRoot == null)
             propsRoot = transform;
 
+        if (aislesRoot == null)
+            aislesRoot = transform;
+
         if (itemSpawner == null)
             itemSpawner = FindObjectOfType<ItemSpawner>();
+
+        CacheSceneBakedAisles();
 
         if (loadLevelOnStart && levels != null && levels.Length > 0)
         {
@@ -179,6 +198,8 @@ public class LevelManager : MonoBehaviour
             itemSpawner.ClearAllSpawnedItems();
 
         ClearPropsRoot();
+        ClearSpawnedAisles();
+        SetSceneBakedAislesActive(true);
     }
 
     void ClearPropsRoot()
@@ -202,6 +223,7 @@ public class LevelManager : MonoBehaviour
             itemSpawner.ApplyLevelSettings(def);
 
         SpawnSceneProps(def);
+        ApplyLevelAisles(def);
     }
 
     void SpawnSceneProps(LevelDefinition def)
@@ -214,22 +236,196 @@ public class LevelManager : MonoBehaviour
             LevelPropPlacement placement = def.sceneProps[i];
             if (placement == null || placement.prefab == null) continue;
 
-            Vector3 position;
-            Quaternion rotation;
-
-            if (placement.spawnPoint != null)
-            {
-                position = placement.spawnPoint.position;
-                rotation = placement.spawnPoint.rotation;
-            }
-            else
-            {
-                position = propsRoot.TransformPoint(placement.localPosition);
-                rotation = propsRoot.rotation * Quaternion.Euler(placement.localEulerAngles);
-            }
+            Vector3 position = propsRoot.TransformPoint(placement.localPosition);
+            Quaternion rotation = propsRoot.rotation * Quaternion.Euler(placement.localEulerAngles);
 
             GameObject instance = Instantiate(placement.prefab, position, rotation, propsRoot);
             instance.name = placement.prefab.name;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 分拣通道
+    // ------------------------------------------------------------------
+
+    void CacheSceneBakedAisles()
+    {
+        AisleDetection[] all = FindObjectsOfType<AisleDetection>(true);
+        var baked = new List<AisleDetection>(all.Length);
+        for (int i = 0; i < all.Length; i++)
+        {
+            AisleDetection aisle = all[i];
+            if (aisle == null) continue;
+            if (aislesRoot != null && aisle.transform.IsChildOf(aislesRoot)) continue;
+            baked.Add(aisle);
+        }
+        sceneBakedAisles = baked.ToArray();
+    }
+
+    void ApplyLevelAisles(LevelDefinition def)
+    {
+        ClearSpawnedAisles();
+
+        if (def == null || def.aisles == null || def.aisles.Length == 0)
+        {
+            SetSceneBakedAislesActive(true);
+            return;
+        }
+
+        bool spawnedAny = TrySpawnLevelAisles(def);
+        if (spawnedAny)
+        {
+            if (hideSceneAislesWhenUsingLevelLayout)
+                SetSceneBakedAislesActive(false);
+            return;
+        }
+
+        ConfigureSceneBakedAisles(def);
+    }
+
+    bool TrySpawnLevelAisles(LevelDefinition def)
+    {
+        bool spawnedAny = false;
+        for (int i = 0; i < def.aisles.Length; i++)
+        {
+            LevelAislePlacement placement = def.aisles[i];
+            if (placement == null) continue;
+
+            GameObject prefab = placement.prefab != null ? placement.prefab : defaultAislePrefab;
+            if (prefab == null) continue;
+
+            if (!TryResolveAisleTransform(placement, out Vector3 position, out Quaternion rotation, out Vector3 scale))
+                continue;
+
+            GameObject instance = Instantiate(prefab, position, rotation, aislesRoot);
+            instance.transform.localScale = scale;
+
+            string suffix = string.IsNullOrEmpty(placement.label)
+                ? placement.category.ToString()
+                : placement.label;
+            instance.name = $"Aisle_{suffix}";
+
+            AisleDetection detection = instance.GetComponent<AisleDetection>();
+            if (detection != null)
+                detection.aisleCategory = placement.category;
+
+            spawnedAisles.Add(instance);
+            spawnedAny = true;
+        }
+        return spawnedAny;
+    }
+
+    void ConfigureSceneBakedAisles(LevelDefinition def)
+    {
+        if (sceneBakedAisles == null || sceneBakedAisles.Length == 0)
+            CacheSceneBakedAisles();
+
+        SetSceneBakedAislesActive(false);
+        var used = new HashSet<AisleDetection>();
+
+        for (int i = 0; i < def.aisles.Length; i++)
+        {
+            LevelAislePlacement placement = def.aisles[i];
+            if (placement == null) continue;
+
+            AisleDetection target = FindSceneAisleForPlacement(placement, used, i);
+            if (target == null)
+            {
+                Debug.LogWarning(
+                    $"[LevelManager] No scene aisle available for category {placement.category} " +
+                    $"(index {i}). Assign defaultAislePrefab to spawn at runtime.");
+                continue;
+            }
+
+            used.Add(target);
+            target.aisleCategory = placement.category;
+            target.gameObject.SetActive(true);
+
+            if (TryResolveAisleTransform(placement, out Vector3 position, out Quaternion rotation, out Vector3 scale))
+            {
+                Transform t = target.transform;
+                t.SetPositionAndRotation(position, rotation);
+                t.localScale = scale;
+            }
+        }
+    }
+
+    AisleDetection FindSceneAisleForPlacement(
+        LevelAislePlacement placement,
+        HashSet<AisleDetection> used,
+        int index)
+    {
+        if (sceneBakedAisles == null) return null;
+
+        // 优先：场景中已有同 category 且未被占用的通道
+        for (int i = 0; i < sceneBakedAisles.Length; i++)
+        {
+            AisleDetection aisle = sceneBakedAisles[i];
+            if (aisle == null || used.Contains(aisle)) continue;
+            if (aisle.aisleCategory == placement.category)
+                return aisle;
+        }
+
+        // 其次：按列表顺序取第一个未使用的场景通道
+        for (int i = 0; i < sceneBakedAisles.Length; i++)
+        {
+            AisleDetection aisle = sceneBakedAisles[i];
+            if (aisle == null || used.Contains(aisle)) continue;
+            return aisle;
+        }
+
+        // 最后：按 index 兜底
+        if (index >= 0 && index < sceneBakedAisles.Length)
+        {
+            AisleDetection aisle = sceneBakedAisles[index];
+            if (aisle != null && !used.Contains(aisle))
+                return aisle;
+        }
+
+        return null;
+    }
+
+    bool TryResolveAisleTransform(
+        LevelAislePlacement placement,
+        out Vector3 position,
+        out Quaternion rotation,
+        out Vector3 scale)
+    {
+        if (aislesRoot == null)
+        {
+            position = placement.localPosition;
+            rotation = Quaternion.Euler(placement.localEulerAngles);
+            scale = placement.localScale;
+            return true;
+        }
+
+        position = aislesRoot.TransformPoint(placement.localPosition);
+        rotation = aislesRoot.rotation * Quaternion.Euler(placement.localEulerAngles);
+        scale = Vector3.Scale(aislesRoot.lossyScale, placement.localScale);
+        return true;
+    }
+
+    void ClearSpawnedAisles()
+    {
+        for (int i = spawnedAisles.Count - 1; i >= 0; i--)
+        {
+            GameObject go = spawnedAisles[i];
+            if (go == null) continue;
+            if (Application.isPlaying)
+                Destroy(go);
+            else
+                DestroyImmediate(go);
+        }
+        spawnedAisles.Clear();
+    }
+
+    void SetSceneBakedAislesActive(bool active)
+    {
+        if (sceneBakedAisles == null) return;
+        for (int i = 0; i < sceneBakedAisles.Length; i++)
+        {
+            if (sceneBakedAisles[i] != null)
+                sceneBakedAisles[i].gameObject.SetActive(active);
         }
     }
 }

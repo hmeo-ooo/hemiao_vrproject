@@ -32,6 +32,32 @@ MonoBehaviour:
   maxTotalItems: 30
   autoStartSpawning: 1
   sceneProps: []
+  aisles:
+  - category: 0
+    label: Metal
+    prefab: {fileID: 6311291743662715886, guid: 5b9f7a5ecdfa1944098bc1ccb82338ed,
+      type: 3}
+    localPosition: {x: -5.8, y: 3, z: 13.5}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 1
+    label: Organic
+    prefab: {fileID: 7983567825950029453, guid: 70338ac1f005129429c6d37ec2ed77b5,
+      type: 3}
+    localPosition: {x: -1.26, y: 3, z: 13.641678}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 2
+    label: CoreEnergy
+    prefab: {fileID: 3237057129092650422, guid: 638ef916b1ac5904096b35725dd671d8,
+      type: 3}
+    localPosition: {x: 3.6, y: 3, z: 13.641678}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  interferences: []
   designNotes: Default level matching original ItemSpawner. Knife/Screwdriver/TapeRecorder
     are already placed in the scene prefab group; add sceneProps here per level if
     needed.
+  showTutorialBeforeLevel: 1
+  tutorialTitle: Day  1
+  tutorialBody: "\u79FB\u52A8\uFF1A\u4F7F\u7528\u3010 W A S D \u3011 \u952E\u63A7\u5236\u89D2\u8272\u5728\u573A\u666F\u4E2D\u79FB\u52A8\u3002\n\r\n\u6293\u53D6\uFF1A\u8D70\u5230\u5783\u573E\u7269\u54C1\u65C1,\u957F\u6309\u3010\u9F20\u6807\u5DE6\u952E\u3011\u5373\u53EF\u6293\u53D6\u7269\u54C1\u3002\n\r\n\u6295\u63B7\uFF1A\u5728\u6293\u53D6\u7269\u54C1\u7684\u72B6\u6001\u4E0B,\u7784\u51C6\u56DE\u6536\u901A\u9053,\u6309\u4E0B\u3010\u9F20\u6807\u53F3\u952E\u3011\u5C06\u7269\u54C1\u6295\u63B7\u51FA\u53BB\u3002\n\r\n\u5F97\u5206\u673A\u5236\uFF1A\u5C06\u5783\u573E\u51C6\u786E\u6295\u63B7\u5230\u5BF9\u5E94\u7684\u91D1\u5C5E/\u6838\u5FC3/\u751F\u7269\u56DE\u6536\u901A\u9053\u5185,\u5373\u53EF\u8D5A\u53D6\u4FE1\u7528\u70B9\u3002"

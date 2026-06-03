@@ -13,9 +13,6 @@ GameObject:
   - component: {fileID: 5787699720913157516}
   - component: {fileID: 1513569263690875784}
   - component: {fileID: 7719244747864290403}
-  - component: {fileID: 3848192349449515370}
-  - component: {fileID: 5312198686463295223}
-  - component: {fileID: 7722072243451373796}
   - component: {fileID: 8344554487036607737}
   m_Layer: 0
   m_Name: Garbage_organic matter
@@ -130,65 +127,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 1
   complexity: 0
-  creditsOnCorrectThrow: 50
-  itemDisplayName: organic matter
-  itemDescription: "\u6709\u673A\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u6709\u673A\u901A\u9053\u3002"
+  creditsOnCorrectThrow: 100
+  itemDisplayName: "\u4EFF\u751F\u76AE\u80A4"
+  itemDescription: "\u4E0D\u7BA1\u751F\u524D\u5C5E\u4E8E\u54EA\u4E2A\u9AD8\u7AEF\u4EFF\u751F\u4EBA\uFF0C\u73B0\u5728\u5B83\u53EA\u662F\u5783\u573E\u3002\u8001\u8001\u5B9E\u5B9E\u6254\u8FDB\u3010\u6709\u673A\u901A\u9053\u3011\u964D\u89E3\u3002\u53CB\u60C5\u63D0\u793A\uFF1A\u6478\u5B8C\u8BB0\u5F97\u6D17\u624B\u3002"
+  prankValueLabel: "[ \u624B\u611F\u6781\u4F73 / \u89E6\u611F\u5ACC\u7591 ]"
   overrideOutlineColor: 0
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
---- !u!114 &3848192349449515370
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc39a468fb676d94fad9d9cbf8d41ac6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sideOffset: 0.65
-  panelSize: {x: 300, y: 130}
-  backgroundColor: {r: 0.22, g: 0.22, b: 0.22, a: 0.9}
-  textColor: {r: 1, g: 1, b: 1, a: 1}
-  nameFontSize: 22
-  descriptionFontSize: 16
---- !u!114 &5312198686463295223
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc39a468fb676d94fad9d9cbf8d41ac6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sideOffset: 0.65
-  panelSize: {x: 300, y: 130}
-  backgroundColor: {r: 0.22, g: 0.22, b: 0.22, a: 0.9}
-  textColor: {r: 1, g: 1, b: 1, a: 1}
-  nameFontSize: 22
-  descriptionFontSize: 16
---- !u!114 &7722072243451373796
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2901559934276544025}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc39a468fb676d94fad9d9cbf8d41ac6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sideOffset: 0.65
-  panelSize: {x: 300, y: 130}
-  backgroundColor: {r: 0.22, g: 0.22, b: 0.22, a: 0.9}
-  textColor: {r: 1, g: 1, b: 1, a: 1}
-  nameFontSize: 22
-  descriptionFontSize: 16
 --- !u!64 &8344554487036607737
 MeshCollider:
   m_ObjectHideFlags: 0

@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 关卡中一个静态道具的生成方式：优先使用 spawnPoint，否则用 positionEuler。
+/// 关卡中一个静态道具的生成方式。坐标可在 Inspector 中从场景拖入物体自动写入。
 /// </summary>
 [Serializable]
 public class LevelPropPlacement
@@ -10,12 +10,9 @@ public class LevelPropPlacement
     [Tooltip("要生成的预制体。")]
     public GameObject prefab;
 
-    [Tooltip("可选：场景里预先摆好的空物体，决定位置与旋转。")]
-    public Transform spawnPoint;
-
-    [Tooltip("未指定 spawnPoint 时，相对 propsRoot 的本地坐标。")]
+    [Tooltip("相对 LevelManager.propsRoot 的本地坐标。在 Inspector 中可从场景拖入物体自动写入。")]
     public Vector3 localPosition;
 
-    [Tooltip("未指定 spawnPoint 时，相对 propsRoot 的本地欧拉角。")]
+    [Tooltip("相对 LevelManager.propsRoot 的本地欧拉角。在 Inspector 中可从场景拖入物体自动写入。")]
     public Vector3 localEulerAngles;
 }

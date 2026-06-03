@@ -78,6 +78,35 @@ public class LevelDefinition : ScriptableObject
     [Tooltip("进入关卡时生成的静态道具（工作台物品、可切割物等）。")]
     public LevelPropPlacement[] sceneProps;
 
+    [Header("分拣通道")]
+    [Tooltip("本关启用的分拣通道列表。展开每条后可从场景拖入物体，自动写入 localPosition / localEulerAngles。")]
+    public LevelAislePlacement[] aisles;
+
+    [Header("关卡干扰")]
+    [Tooltip("本关在指定时间触发的干扰列表（如电视雪花叠加层）。每条由 LevelSessionController 按 triggerAtSeconds 排程。")]
+    public LevelInterferenceConfig[] interferences;
+
     [TextArea(2, 4)]
     public string designNotes;
+
+    [Header("关卡指引 / 教程")]
+    [Tooltip("进入本关前是否显示指引 UI（在 Level Hub 点「进入关卡」之后、倒计时开始之前）。")]
+    public bool showTutorialBeforeLevel = true;
+
+    [Tooltip("指引页标题；留空则使用 displayName。")]
+    public string tutorialTitle;
+
+    [TextArea(4, 12)]
+    [Tooltip("指引与教程正文，支持 TMP 富文本标签。")]
+    public string tutorialBody;
+
+    public bool HasTutorialContent =>
+        !string.IsNullOrWhiteSpace(tutorialTitle) || !string.IsNullOrWhiteSpace(tutorialBody);
+
+    public string ResolveTutorialTitle()
+    {
+        if (!string.IsNullOrWhiteSpace(tutorialTitle))
+            return tutorialTitle.Trim();
+        return !string.IsNullOrWhiteSpace(displayName) ? displayName : $"Level {levelNumber}";
+    }
 }

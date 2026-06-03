@@ -12,25 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9ea695347c4a964ba875342efa7da2d, type: 3}
   m_Name: Level_10
   m_EditorClassIdentifier: 
-  levelNumber: 10
-  displayName: Level 10
+  levelNumber: 1
+  displayName: Level 1
   levelDurationSeconds: 120
-  spawnPrefabs:
-  - {fileID: 100100000, guid: 94a92b7abc64bc3489927de1cc85257b, type: 3}
-  - {fileID: 100100000, guid: 30042e6265dd1e64d9b9c9677e3fe5ae, type: 3}
-  - {fileID: 100100000, guid: ba702c496b69f824885007ee597b534f, type: 3}
-  - {fileID: 100100000, guid: 16d61dfc72572c1418da46ae945962d2, type: 3}
-  spawnInterval: 3
+  spawnPrefabs: []
+  spawnInterval: 1
   itemsPerBurst: 5
   spawnSpreadRadius: 0.3
-  burstImpulse: 0
-  burstImpulseRandomness: 0
-  maxActiveItems: 9
-  maxTotalItems: 15
+  burstImpulse: 2
+  burstImpulseRandomness: 0.5
+  maxActiveItems: 0
+  maxTotalItems: 0
   autoStartSpawning: 1
-  complexityComposition:
-    basicWeight: 1
-    compositeWeight: 3
-    dangerousWeight: 6
   sceneProps: []
-  designNotes: Configure in Inspector.
+  designNotes: 

@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 1859718285321547917}
   - component: {fileID: 7592644762495536209}
   - component: {fileID: 4012107081792568911}
-  - component: {fileID: 6423996762199090229}
   - component: {fileID: 1155439674622254371}
   m_Layer: 0
   m_Name: Garbage_metal
@@ -128,29 +127,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 0
   complexity: 0
-  creditsOnCorrectThrow: 100
-  itemDisplayName: metal
-  itemDescription: "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002"
+  creditsOnCorrectThrow: 50
+  itemDisplayName: "\u91D1\u5C5E\u5757"
+  itemDescription: "\u5168\u5B87\u5B99\u6700\u8001\u5B9E\u7684\u5783\u573E\uFF0C\u4E0D\u4EAE\u706F\u3001\u4E0D\u7206\u70B8\u3001\u6CA1\u813E\u6C14\uFF0C\u4F46\u662F\u63D0\u4F9B\u7684\u4FE1\u7528\u70B9\u5C11\u5F97\u53EF\u601C\u3002\u95ED\u7740\u773C\u5F80\u3010\u91D1\u5C5E\u901A\u9053\u3011\u91CC\u6254\u5C31\u5BF9\u4E86\u3002"
+  prankValueLabel: "[ \u6781\u5EA6\u5EC9\u4EF7 / \u60C5\u7EEA\u7A33\u5B9A ]"
   overrideOutlineColor: 0
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
---- !u!114 &6423996762199090229
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 26042307918521241}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc39a468fb676d94fad9d9cbf8d41ac6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sideOffset: 0.65
-  panelSize: {x: 300, y: 130}
-  backgroundColor: {r: 0.22, g: 0.22, b: 0.22, a: 0.9}
-  textColor: {r: 1, g: 1, b: 1, a: 1}
-  nameFontSize: 22
-  descriptionFontSize: 16
 --- !u!64 &1155439674622254371
 MeshCollider:
   m_ObjectHideFlags: 0

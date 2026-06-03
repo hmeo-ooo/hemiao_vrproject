@@ -150,8 +150,9 @@ MonoBehaviour:
   category: 1
   complexity: 0
   creditsOnCorrectThrow: 100
-  itemDisplayName: Bionic skin
-  itemDescription: "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002"
+  itemDisplayName: "\u4EFF\u751F\u76AE\u80A4"
+  itemDescription: "\u4E0D\u7BA1\u751F\u524D\u5C5E\u4E8E\u54EA\u4E2A\u9AD8\u7AEF\u4EFF\u751F\u4EBA\uFF0C\u73B0\u5728\u5B83\u53EA\u662F\u5783\u573E\u3002\u8001\u8001\u5B9E\u5B9E\u6254\u8FDB\u3010\u6709\u673A\u901A\u9053\u3011\u964D\u89E3\u3002\u53CB\u60C5\u63D0\u793A\uFF1A\u6478\u5B8C\u8BB0\u5F97\u6D17\u624B\u3002"
+  prankValueLabel: 
   overrideOutlineColor: 0
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1001 &2137863103567670881
@@ -257,6 +258,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 7283645829471028395}
+    - targetCorrespondingSourceObject: {fileID: 3905442571881802818, guid: 1d11441d895d83d49ba5aef94d6c353e,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8722988940871931281}
   m_SourcePrefab: {fileID: 100100000, guid: 1d11441d895d83d49ba5aef94d6c353e, type: 3}
 --- !u!4 &2364966864021559449 stripped
 Transform:
@@ -312,8 +317,10 @@ MonoBehaviour:
   category: 0
   complexity: 1
   creditsOnCorrectThrow: 150
-  itemDisplayName: Garbage_bionic hand
-  itemDescription: "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002"
+  itemDisplayName: "\u4EFF\u751F\u624B\u81C2"
+  itemDescription: "\u76F4\u63A5\u6254\uFF1F\u901A\u9053\u4F1A\u4E00\u8BB0\u8033\u5149\u5410\u56DE\u4F60\u8138\u4E0A\uFF01\u6309
+    E \u8FDB\u5165\u62C6\u89E3\u6A21\u5F0F\uFF0C\u50CF\u6495\u9762\u819C\u4E00\u6837\u628A\u5916\u5C42\u3010\u4EFF\u751F\u76AE\u80A4\u3011\u626F\u4E0B\u6765\u6254\u8FDB\u6709\u673A\u901A\u9053\uFF0C\u5269\u4E0B\u7684\u3010\u91D1\u5C5E\u624B\u81C2\u3011\u9AA8\u67B6\u6254\u8FDB\u91D1\u5C5E\u901A\u9053\u3002"
+  prankValueLabel: "[ \u8D5B\u535A\u65AD\u80A2 ]"
   overrideOutlineColor: 0
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &7283645829471028395
@@ -329,11 +336,82 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   inspectKey: 101
+  interactionMode: 0
   detachableParts:
   - {fileID: 5223361193245831384}
-  - {fileID: 0}
   detachScreenRatio: 0.18
   dragWorldSensitivity: 0.005
   detachVelocity: 0.5
   inspectionDisplayEulers: {x: 0, y: 90, z: -45}
+  knifeSprite: {fileID: 0}
+  knifeIdleAnchor: {x: 0.85, y: 0.5}
+  knifeUISize: {x: 220, y: 220}
+  knifeTipPivot: {x: 0.15, y: 0.85}
+  knifeUIRotation: 0
+  knifeReturnSmoothTime: 0.12
+  knifeCutSeparateImpulse: 0.5
+  knifeCutInitialDropSpeed: 0.4
+  knifeCutDropSpread: 0.18
   ignoreSelfCollisionsWhileAttached: 1
+  shellInfo:
+    targetPart: {fileID: 2364966864021559449}
+    note: 
+    displayName: "\u91D1\u5C5E\u624B\u81C2"
+    description: "\u6252\u6389\u4E86\u6F02\u4EAE\u5916\u8863\u540E\u9732\u51FA\u7684\u786C\u6838\u91D1\u5C5E\u9AA8\u67B6\u3002\u6CA1\u4E86\u76AE\u80A4\u7684\u963B\u788D\uFF0C\u8FD9\u5BB6\u4F19\u73B0\u5728\u7EAF\u7CB9\u5F97\u53EA\u5269\u4E0B\u91CD\u91CF\u3002\u522B\u8BD5\u56FE\u7528\u5B83\u548C\u4E3B\u7BA1\u63E1\u624B\uFF0C\u76F4\u63A5\u628A\u5B83\u72E0\u72E0\u7838\u8FDB\u3010\u91D1\u5C5E\u901A\u9053\u3011\u5427\uFF01"
+    overrideCategory: 1
+    category: 1
+    overrideComplexity: 0
+    complexity: 0
+    overrideCredits: 0
+    creditsOnCorrectThrow: 150
+    prankValueLabel: "[ \u94A2\u94C1\u9AA8\u67B6 / \u7EC8\u7ED3\u8005\u540C\u6B3E
+      ]"
+  partInfos:
+  - targetPart: {fileID: 5223361193245831384}
+    note: 
+    displayName: "\u4EFF\u751F\u76AE\u80A4"
+    description: "\u521A\u521A\u4ECE\u4EFF\u751F\u624B\u81C2\u4E0A\u70ED\u4E4E\u624B\u6495\u4E0B\u6765\u7684\u5916\u76AE\u3002\u867D\u7136\u8131\u79BB\u4E86\u5927\u90E8\u961F\uFF0C\u4F46\u7531\u4E8E\u5F39\u6027\u60CA\u4EBA\uFF0C\u4F9D\u7136\u6DF1\u53D7\u3010\u6709\u673A\u901A\u9053\u3011\u7684\u6B22\u8FCE\u3002\u522B\u62FF\u6765\u5F53\u89E3\u538B\u73A9\u5177\uFF0C\u8D76\u7D27\u6254\u8FDB\u53BB\u6362\u94B1\uFF01"
+    overrideCategory: 0
+    category: 1
+    overrideComplexity: 0
+    complexity: 0
+    overrideCredits: 0
+    creditsOnCorrectThrow: 70
+    prankValueLabel: "[ \u539F\u88C5\u6B63\u54C1 / \u5C40\u90E8\u624B\u6495\u9762\u819C
+      ]"
+--- !u!114 &8722988940871931281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141784630288663075}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67941867a28c62e418fc688a8ade3336, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shellRoot: {fileID: 2364966864021559449}
+  contentsRoot: {fileID: 5223361193245831384}
+  shatterEffectPrefab: {fileID: 0}
+  contentSeparateImpulse: 0.35
+  separateDropInitialSpeed: 0.5
+  destroySelfAfterCut: 0
+  abandonedMixtureMessage: Abandoned mixture
+  abandonedMixtureCredits: 1
+  shellInfo:
+    targetPart: {fileID: 0}
+    note: 
+    displayName: 
+    description: 
+    overrideCategory: 1
+    category: 0
+    overrideComplexity: 0
+    complexity: 0
+    overrideCredits: 0
+    creditsOnCorrectThrow: 10
+    prankValueLabel: 
+  contentInfos: []
+  onCut:
+    m_PersistentCalls:
+      m_Calls: []

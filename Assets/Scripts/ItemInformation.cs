@@ -41,6 +41,10 @@ public class ItemInformation : MonoBehaviour
     [TextArea(2, 6)]
     public string itemDescription;
 
+    [Header("\u6076\u641E\u4EF7\u503C")]
+    [Tooltip("\u6076\u641E\u4EF7\u503C\u6807\u7B7E\u6587\u672C\uFF08\u53EF\u81EA\u7531\u586B\u5199\uFF0C\u7559\u7A7A\u5219\u4E0D\u663E\u793A\uFF09")]
+    public string prankValueLabel;
+
     [Header("\u63CF\u8FB9\uFF08\u53EF\u9009\uFF09")]
     [Tooltip("\u52FE\u9009\u540E\u4F7F\u7528\u4E0B\u65B9\u989C\u8272\uFF0C\u8986\u76D6 CharacterInteraction \u4E2D\u7684\u7C7B\u522B\u9ED8\u8BA4\u63CF\u8FB9\u8272")]
     public bool overrideOutlineColor;
@@ -49,6 +53,8 @@ public class ItemInformation : MonoBehaviour
 
     public string ResolvedDisplayName =>
         string.IsNullOrWhiteSpace(itemDisplayName) ? gameObject.name : itemDisplayName;
+
+    public bool HasPrankValueLabel => !string.IsNullOrWhiteSpace(prankValueLabel);
 
     void Awake()
     {
@@ -65,23 +71,24 @@ public class ItemInformation : MonoBehaviour
         if (string.IsNullOrWhiteSpace(itemDisplayName))
             itemDisplayName = gameObject.name;
 
-        if (!string.IsNullOrWhiteSpace(itemDescription))
-            return;
-
-        switch (category)
+        if (string.IsNullOrWhiteSpace(itemDescription))
         {
-            case ItemCategory.Metal:
-                itemDescription = "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002";
-                break;
-            case ItemCategory.OrganicMatter:
-                itemDescription = "\u6709\u673A\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u6709\u673A\u901A\u9053\u3002";
-                break;
-            case ItemCategory.CoreEnergy:
-                itemDescription = "\u6838\u5FC3\u80FD\u6E90\uFF0C\u6295\u5165\u6838\u5FC3\u80FD\u6E90\u901A\u9053\u3002";
-                break;
-            case ItemCategory.DangerousGoods:
-                itemDescription = "\u5371\u9669\u54C1\uFF0C\u6295\u5165\u5371\u9669\u901A\u9053\u3002";
-                break;
+            switch (category)
+            {
+                case ItemCategory.Metal:
+                    itemDescription = "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002";
+                    break;
+                case ItemCategory.OrganicMatter:
+                    itemDescription = "\u6709\u673A\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u6709\u673A\u901A\u9053\u3002";
+                    break;
+                case ItemCategory.CoreEnergy:
+                    itemDescription = "\u6838\u5FC3\u80FD\u6E90\uFF0C\u6295\u5165\u6838\u5FC3\u80FD\u6E90\u901A\u9053\u3002";
+                    break;
+                case ItemCategory.DangerousGoods:
+                    itemDescription = "\u5371\u9669\u54C1\uFF0C\u6295\u5165\u5371\u9669\u901A\u9053\u3002";
+                    break;
+            }
         }
     }
+
 }

@@ -14,23 +14,78 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelNumber: 4
   displayName: Level 4
-  levelDurationSeconds: 120
+  levelDurationSeconds: 60
   spawnPrefabs:
-  - {fileID: 100100000, guid: 94a92b7abc64bc3489927de1cc85257b, type: 3}
-  - {fileID: 100100000, guid: 30042e6265dd1e64d9b9c9677e3fe5ae, type: 3}
-  - {fileID: 100100000, guid: ba702c496b69f824885007ee597b534f, type: 3}
-  - {fileID: 100100000, guid: 16d61dfc72572c1418da46ae945962d2, type: 3}
-  spawnInterval: 3
+  - {fileID: 26042307918521241, guid: 94a92b7abc64bc3489927de1cc85257b, type: 3}
+  - {fileID: 2901559934276544025, guid: 30042e6265dd1e64d9b9c9677e3fe5ae, type: 3}
+  - {fileID: 1742078769820402944, guid: ba702c496b69f824885007ee597b534f, type: 3}
+  - {fileID: 3704749408383989885, guid: 1ab114ac450a3b545a7b1186116d92fa, type: 3}
+  - {fileID: 4843321675143679443, guid: 16d61dfc72572c1418da46ae945962d2, type: 3}
+  complexityComposition:
+    basicWeight: 5
+    compositeWeight: 4
+    dangerousWeight: 1
+  spawnInterval: 1
   itemsPerBurst: 5
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 9
-  maxTotalItems: 15
+  maxActiveItems: 13
+  maxTotalItems: 25
   autoStartSpawning: 1
-  complexityComposition:
-    basicWeight: 5
-    compositeWeight: 3
-    dangerousWeight: 0
-  sceneProps: []
-  designNotes: Configure in Inspector.
+  sceneProps:
+  - prefab: {fileID: 4969296450780851133, guid: aa67904ddd247d241afa5f29fba135f1,
+      type: 3}
+    localPosition: {x: -0.8, y: 0.8, z: 1.6}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+  aisles:
+  - category: 0
+    label: 
+    prefab: {fileID: 6311291743662715886, guid: 5b9f7a5ecdfa1944098bc1ccb82338ed,
+      type: 3}
+    localPosition: {x: -5.8, y: 3, z: 13.5}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 1
+    label: 
+    prefab: {fileID: 7983567825950029453, guid: 70338ac1f005129429c6d37ec2ed77b5,
+      type: 3}
+    localPosition: {x: -1.26, y: 3, z: 13.641678}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 2
+    label: 
+    prefab: {fileID: 3237057129092650422, guid: 638ef916b1ac5904096b35725dd671d8,
+      type: 3}
+    localPosition: {x: 3.6, y: 3, z: 13.641678}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 3
+    label: 
+    prefab: {fileID: 3926130088177694511, guid: 97e8141684233d046907f11bc1b207d8,
+      type: 3}
+    localPosition: {x: 7.79, y: 3, z: 13.641678}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  interferences:
+  - type: 0
+    triggerAtSeconds: 10
+    durationSeconds: 10
+    intensity: 0.45
+    noiseFps: 24
+    noiseTextureSize: 256
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    centerPatternSprite: {fileID: 0}
+    centerPatternSize: {x: 220, y: 220}
+    centerPatternPulseScale: 1.25
+    centerPatternPulseFrequencyHz: 2
+    centerPatternColor: {r: 1, g: 1, b: 1, a: 1}
+    cancelKey: 101
+    pressesToCancel: 10
+    flashColor: {r: 1, g: 0, b: 0, a: 1}
+    flashDuration: 0.18
+  designNotes: 
+  showTutorialBeforeLevel: 1
+  tutorialTitle: Day  4
+  tutorialBody: "\u8FDB\u5165\u5173\u5361\u4E00\u6BB5\u65F6\u95F4\u540E,\u5C4F\u5E55\u5C06\u51FA\u73B0\u89C6\u89C9\u6545\u969C\u3002\n\n\u89E3\u9664\u64CD\u4F5C\uFF1A\u5F53\u53D1\u751F\u89C6\u89C9\u6545\u969C\u65F6\uFF0C\u73A9\u5BB6\u9700\u8981\u7ACB\u5373\u5FEB\u901F\u8FDE\u7EED\u6309\u4E0B\u7279\u5B9A\u6309\u952E\uFF08\u5982\u591A\u6B21\u6572\u51FB
+    e\u952E\uFF09\u8FDB\u884C\u89C6\u89C9\u7CFB\u7EDF\u81EA\u6211\u4FEE\u590D\uFF0C\u65B9\u53EF\u6E05\u9664\u5E72\u6270\uFF0C\u7EE7\u7EED\u8FDB\u884C\u6B63\u5E38\u7684\u5783\u573E\u62C6\u89E3\u4E0E\u56DE\u6536\u3002"

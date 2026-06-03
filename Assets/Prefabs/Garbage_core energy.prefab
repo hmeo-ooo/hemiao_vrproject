@@ -127,9 +127,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 2
   complexity: 0
-  creditsOnCorrectThrow: 200
-  itemDisplayName: core energy
-  itemDescription: "\u6838\u5FC3\u80FD\u6E90\uFF0C\u6295\u5165\u6838\u5FC3\u80FD\u6E90\u901A\u9053\u3002"
+  creditsOnCorrectThrow: 300
+  itemDisplayName: "\u6838\u5FC3\u80FD\u6E90"
+  itemDescription: "\u95EA\u70C1\u7740\u91D1\u94B1\u7684\u5E7D\u84DD\u5149\u8292\uFF0C\u57FA\u5730\u53D1\u7535\u673A\u7684\u52A8\u529B\u6E90\uFF0C\u4E5F\u662F\u4F60\u4FE1\u7528\u70B9\u7684\u5927\u5934\u6765\u6E90\uFF01\u8BF7\u6E29\u67D4\u5730\u9001\u5165\u3010\u80FD\u6E90\u901A\u9053\u3011\uFF0C\u78D5\u574F\u4E86\u4E3B\u7BA1\u8FDE\u591C\u6263\u5149\u4F60\u7EE9\u6548\u3002"
+  prankValueLabel: "[ \u52A0\u85AA\u5E0C\u671B  ]"
   overrideOutlineColor: 0
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!64 &1725545869897262483

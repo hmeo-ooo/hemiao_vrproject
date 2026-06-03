@@ -37,6 +37,13 @@ public class Cuttable : MonoBehaviour
     [Tooltip("未切开投入通道时增加的信用点。")]
     public int abandonedMixtureCredits = 1;
 
+    [Header("切割后的物品信息")]
+    [Tooltip("外壳分离后应当呈现的 ItemInformation 数据。留空则保留原有数据（多半是整体复合物的介绍，可能与外壳本身不符）。")]
+    public ItemPartInfoOverride shellInfo;
+
+    [Tooltip("内容物分离后各自的 ItemInformation 数据。优先按 targetPart 引用匹配，未指定时按数组顺序匹配 contents（contentsRoot 或 shell 下从最后一个子物体开始倒序）。多出的内容物会保留原有数据。")]
+    public ItemPartInfoOverride[] contentInfos;
+
     public UnityEvent onCut;
 
     bool cut;
@@ -149,10 +156,13 @@ public class Cuttable : MonoBehaviour
 
             MakeInteractablePart(child, pushDir * contentSeparateImpulse);
             IgnoreCollidersBetween(child.gameObject, shell.gameObject);
+
+            ResolveContentInfo(child, i)?.ApplyTo(child);
         }
 
         DetachRemainingChildren(shell, contents);
         MakeInteractablePart(shell);
+        shellInfo?.ApplyTo(shell);
 
         onCut?.Invoke();
 
@@ -160,6 +170,31 @@ public class Cuttable : MonoBehaviour
             Destroy(gameObject);
         else
             enabled = false;
+    }
+
+    ItemPartInfoOverride ResolveContentInfo(Transform child, int index)
+    {
+        if (contentInfos == null || contentInfos.Length == 0) return null;
+
+        // 优先按 targetPart 引用匹配
+        for (int i = 0; i < contentInfos.Length; i++)
+        {
+            ItemPartInfoOverride info = contentInfos[i];
+            if (info != null && info.targetPart == child)
+                return info;
+        }
+
+        // 回退到按数组顺序匹配，但跳过已绑定到其他 targetPart 的条目
+        for (int i = 0, used = 0; i < contentInfos.Length; i++)
+        {
+            ItemPartInfoOverride info = contentInfos[i];
+            if (info == null) continue;
+            if (info.targetPart != null) continue;
+            if (used == index) return info;
+            used++;
+        }
+
+        return null;
     }
 
     void ReleaseFromWorkTables()
