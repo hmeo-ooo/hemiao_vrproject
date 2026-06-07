@@ -35,11 +35,14 @@ public class InspectionView : MonoBehaviour
     public Color dimColor = Color.black;
 
     [Header("展示")]
-    [Tooltip("审视相机距离物品的距离（米），决定物品在屏幕上的尺寸。值越小物品越大。")]
-    public float displayDistance = 0.6f;
+    [Tooltip("审视相机距离物品的距离（米）。建议与 CharacterInteraction.holdDistance 接近，避免物体被放大。")]
+    public float displayDistance = 1.2f;
 
-    [Tooltip("审视相机视野（度）。")]
-    public float fieldOfView = 45f;
+    [Tooltip("按包围盒自动推远相机时的额外留白系数。")]
+    public float displayDistancePadding = 1.1f;
+
+    [Tooltip("审视相机视野（度）。为 0 则沿用主相机 FOV。")]
+    public float fieldOfView = 0f;
 
     [Tooltip("审视舱在世界中的位置，需远离主场景，避免被主相机看到。")]
     public Vector3 inspectionRoomCenter = new Vector3(10000f, 10000f, 10000f);
@@ -90,6 +93,17 @@ public class InspectionView : MonoBehaviour
     bool isDraggingKnife;
     Vector2 knifeReturnVelocity;
 
+    readonly List<GameObject> detachableOutlineRenderers = new List<GameObject>();
+    Material detachableOutlineMaterial;
+
+    struct PartTransformSnapshot
+    {
+        public Vector3 worldScale;
+        public Vector3 localPosition;
+    }
+
+    readonly Dictionary<Transform, PartTransformSnapshot> partSnapshots = new Dictionary<Transform, PartTransformSnapshot>();
+
     public bool IsInspecting => isInspecting;
 
     void Awake()
@@ -105,6 +119,7 @@ public class InspectionView : MonoBehaviour
     void OnDestroy()
     {
         if (_instance == this) _instance = null;
+        ClearDetachableOutlines();
         ReleaseRenderTexture();
     }
 
@@ -145,8 +160,11 @@ public class InspectionView : MonoBehaviour
             Transform part = insp.detachableParts[i];
             if (part == null) continue;
             CaptureRigidbody(part.GetComponent<Rigidbody>());
+            if (part.GetComponent<Rigidbody>() == null)
+                CaptureRigidbody(part.GetComponentInChildren<Rigidbody>());
         }
         FreezeAllCapturedRigidbodies();
+        CapturePartSnapshots(insp);
 
         item.transform.SetParent(null, true);
         item.transform.position = inspectionRoomCenter;
@@ -155,18 +173,18 @@ public class InspectionView : MonoBehaviour
         EnsureOverlay();
         EnsureRenderTexture();
 
-        inspectionCamera.transform.position = inspectionRoomCenter + Vector3.back * displayDistance;
-        inspectionCamera.transform.rotation = Quaternion.identity;
-        inspectionCamera.fieldOfView = fieldOfView;
+        // 使用 InspectableItem 上配置的固定欧拉角，使物品姿态与玩家持物时的角度无关。
+        item.transform.rotation = Quaternion.Euler(insp.inspectionDisplayEulers);
+
+        FrameInspectionCamera(item);
+
         inspectionCamera.targetTexture = renderTexture;
         inspectionCamera.gameObject.SetActive(true);
-
-        // 使用 InspectableItem 上配置的固定欧拉角，使物品姿态与玩家持物时的角度无关。
-        item.transform.rotation = inspectionCamera.transform.rotation * Quaternion.Euler(insp.inspectionDisplayEulers);
 
         overlayCanvas.gameObject.SetActive(true);
 
         ConfigureKnifeForCurrentMode();
+        ApplyDetachableOutlines();
 
         gateWasBlocked = GameplayInputGate.IsBlocked;
         GameplayInputGate.SetBlocked(true);
@@ -285,14 +303,37 @@ public class InspectionView : MonoBehaviour
         // 这样分离后两者再相遇会正常碰撞、不会互相穿透。
         if (inspectable != null)
         {
-            inspectable.RestoreCollisionFor(partRoot);
             inspectable.ResolvePartInfo(partRoot)?.ApplyTo(partRoot);
-            // DragDetach 模式下"剩下的外壳本体"也是分离结果的一部分，
-            // 同样写入 shellInfo 描述（多次撕同一物体时重复写入无副作用）。
             inspectable.shellInfo?.ApplyTo(inspectable.transform);
         }
         partRoot.SetParent(null, true);
+        RestorePartWorldScale(partRoot);
+        inspectable?.ReleaseAttachedPart(partRoot);
         EndInspection(partRoot, dragWorldDir);
+    }
+
+    void FinalizeDetachedPart(Transform part, Vector3 dropAnchor, Vector3 detachDir)
+    {
+        if (part == null) return;
+
+        RestorePartWorldScale(part);
+        ItemSpawner.FinalizeLooseItem(part.gameObject);
+
+        Rigidbody rb = part.GetComponent<Rigidbody>();
+        if (rb == null) return;
+
+        Vector3 dir = detachDir.sqrMagnitude > 1e-4f ? detachDir.normalized : Vector3.up;
+        part.position = dropAnchor + dir * 0.15f;
+
+        float speed = inspectable != null ? inspectable.detachVelocity : 1f;
+        rb.velocity = dir * speed;
+        rb.angularVelocity = Vector3.zero;
+    }
+
+    static bool IsTransformUnderDetachedPart(Transform t, Transform detachedPart)
+    {
+        if (t == null || detachedPart == null) return false;
+        return t == detachedPart || t.IsChildOf(detachedPart);
     }
 
     // ------------------------------------------------------------------
@@ -437,11 +478,15 @@ public class InspectionView : MonoBehaviour
 
         // 写入分离后的 ItemInformation（外壳 + 各子件）
         inspectable.shellInfo?.ApplyTo(inspectedItem.transform);
+        if (inspectedItem != null)
+            ItemSpawner.FinalizeLooseItem(inspectedItem);
         for (int i = 0; i < partsInfo.Count; i++)
         {
             Transform p = partsInfo[i].part;
             if (p == null) continue;
             inspectable.ResolvePartInfo(p)?.ApplyTo(p);
+            ItemSpawner.FinalizeLooseItem(p.gameObject);
+            inspectable.ReleaseAttachedPart(p);
         }
 
         FinalizeKnifeCut(partsInfo);
@@ -456,7 +501,7 @@ public class InspectionView : MonoBehaviour
     void FinalizeKnifeCut(List<PartKnifeInfo> parts)
     {
         Vector3 dropAnchor = mainCamera != null
-            ? mainCamera.transform.position + mainCamera.transform.forward * Mathf.Max(displayDistance, 0.4f)
+            ? mainCamera.transform.position + mainCamera.transform.forward * GetDropDistance()
             : Vector3.zero;
 
         // 复位外壳的父子层级与位姿（与 EndInspection 中相同的还原逻辑）
@@ -488,7 +533,9 @@ public class InspectionView : MonoBehaviour
             if (idx >= 0)
             {
                 Vector3 dir = parts[idx].dropDir;
-                parts[idx].part.position = dropAnchor + dir * spread;
+                Transform part = parts[idx].part;
+                part.position = dropAnchor + dir * spread;
+                RestorePartWorldScale(part);
                 s.rb.velocity = Vector3.down * dropSpeed + dir * impulse;
                 s.rb.angularVelocity = Vector3.zero;
             }
@@ -549,8 +596,10 @@ public class InspectionView : MonoBehaviour
     {
         if (!isInspecting) return;
 
+        RestoreDetachedPartLocalPositions(detachedPart);
+
         Vector3 dropAnchor = mainCamera != null
-            ? mainCamera.transform.position + mainCamera.transform.forward * Mathf.Max(displayDistance, 0.4f)
+            ? mainCamera.transform.position + mainCamera.transform.forward * GetDropDistance()
             : Vector3.zero;
 
         if (inspectedItem != null)
@@ -563,27 +612,21 @@ public class InspectionView : MonoBehaviour
                 inspectedItem.transform.SetSiblingIndex(originalSiblingIndex);
         }
 
+        if (detachedPart != null)
+            FinalizeDetachedPart(detachedPart, dropAnchor, detachDir);
+
         for (int i = 0; i < rbStates.Count; i++)
         {
             var s = rbStates[i];
             if (s.rb == null) continue;
-            bool isDetached = detachedPart != null && s.rb.transform == detachedPart;
-            s.rb.isKinematic = isDetached ? false : s.kinematic;
-            s.rb.useGravity = isDetached ? true : s.gravity;
-            s.rb.detectCollisions = isDetached ? true : s.detect;
+            if (IsTransformUnderDetachedPart(s.rb.transform, detachedPart))
+                continue;
 
-            if (isDetached)
-            {
-                Vector3 dir = detachDir.sqrMagnitude > 1e-4f ? detachDir.normalized : Vector3.up;
-                detachedPart.position = dropAnchor + dir * 0.15f;
-                if (!s.rb.isKinematic)
-                {
-                    float speed = inspectable != null ? inspectable.detachVelocity : 1f;
-                    s.rb.velocity = dir * speed;
-                    s.rb.angularVelocity = Vector3.zero;
-                }
-            }
-            else if (!s.rb.isKinematic)
+            s.rb.isKinematic = s.kinematic;
+            s.rb.useGravity = s.gravity;
+            s.rb.detectCollisions = s.detect;
+
+            if (!s.rb.isKinematic)
             {
                 s.rb.velocity = Vector3.zero;
                 s.rb.angularVelocity = Vector3.zero;
@@ -599,6 +642,8 @@ public class InspectionView : MonoBehaviour
     /// </summary>
     void TeardownInspectionUI()
     {
+        ClearDetachableOutlines();
+
         if (overlayCanvas != null) overlayCanvas.gameObject.SetActive(false);
         if (knifeRt != null) knifeRt.gameObject.SetActive(false);
         if (inspectionCamera != null)
@@ -616,6 +661,7 @@ public class InspectionView : MonoBehaviour
         Cursor.lockState = prevLockMode;
         Cursor.visible = prevCursorVisible;
 
+        CharacterInteraction interaction = characterInteraction;
         isInspecting = false;
         inspectedItem = null;
         inspectable = null;
@@ -623,6 +669,100 @@ public class InspectionView : MonoBehaviour
         dragTarget = null;
         isDragging = false;
         isDraggingKnife = false;
+        partSnapshots.Clear();
+
+        interaction?.ForceRefreshInteractionVisuals();
+    }
+
+    float GetDropDistance()
+    {
+        if (characterInteraction != null)
+            return Mathf.Max(0.4f, characterInteraction.holdDistance);
+        return Mathf.Max(0.4f, displayDistance);
+    }
+
+    float GetInspectionFieldOfView()
+    {
+        if (fieldOfView > 0f) return fieldOfView;
+        if (mainCamera != null) return mainCamera.fieldOfView;
+        return 60f;
+    }
+
+    void CapturePartSnapshots(InspectableItem insp)
+    {
+        partSnapshots.Clear();
+        if (insp == null) return;
+
+        for (int i = 0; i < insp.detachableParts.Count; i++)
+        {
+            Transform part = insp.detachableParts[i];
+            if (part == null) continue;
+            partSnapshots[part] = new PartTransformSnapshot
+            {
+                worldScale = part.lossyScale,
+                localPosition = part.localPosition
+            };
+        }
+    }
+
+    void FrameInspectionCamera(GameObject item)
+    {
+        if (inspectionCamera == null || item == null) return;
+
+        Bounds bounds = ItemInfoWorldUI.CalculateWorldBounds(item);
+        float fov = GetInspectionFieldOfView();
+        inspectionCamera.fieldOfView = fov;
+
+        float distance = GetDropDistance();
+        float radius = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+        if (radius > 0.001f)
+        {
+            float fitDistance = radius / Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
+            distance = Mathf.Max(distance, fitDistance * displayDistancePadding);
+        }
+
+        Vector3 lookTarget = bounds.center;
+        inspectionCamera.transform.position = lookTarget + Vector3.back * distance;
+        inspectionCamera.transform.rotation = Quaternion.identity;
+    }
+
+    void RestorePartWorldScale(Transform part)
+    {
+        if (part == null) return;
+        if (!partSnapshots.TryGetValue(part, out PartTransformSnapshot snap)) return;
+        SetTransformWorldScale(part, snap.worldScale);
+    }
+
+    void RestoreDetachedPartLocalPositions(Transform detachedPart)
+    {
+        if (inspectable == null || inspectedItem == null) return;
+
+        for (int i = 0; i < inspectable.detachableParts.Count; i++)
+        {
+            Transform part = inspectable.detachableParts[i];
+            if (part == null || part == detachedPart) continue;
+            if (!part.IsChildOf(inspectedItem.transform)) continue;
+            if (!partSnapshots.TryGetValue(part, out PartTransformSnapshot snap)) continue;
+            part.localPosition = snap.localPosition;
+        }
+    }
+
+    static void SetTransformWorldScale(Transform t, Vector3 worldScale)
+    {
+        if (t == null) return;
+
+        Transform parent = t.parent;
+        if (parent == null)
+        {
+            t.localScale = worldScale;
+            return;
+        }
+
+        Vector3 ps = parent.lossyScale;
+        t.localScale = new Vector3(
+            worldScale.x / Mathf.Max(Mathf.Abs(ps.x), 1e-6f),
+            worldScale.y / Mathf.Max(Mathf.Abs(ps.y), 1e-6f),
+            worldScale.z / Mathf.Max(Mathf.Abs(ps.z), 1e-6f));
     }
 
     void CaptureRigidbody(Rigidbody rb)
@@ -774,5 +914,162 @@ public class InspectionView : MonoBehaviour
         renderTexture = null;
         rtWidth = 0;
         rtHeight = 0;
+    }
+
+    // ------------------------------------------------------------------
+    // DragDetach 可撕扯件描边
+    // ------------------------------------------------------------------
+
+    void ApplyDetachableOutlines()
+    {
+        ClearDetachableOutlines();
+        if (inspectable == null) return;
+        if (inspectable.interactionMode != InspectableItem.InspectionInteraction.DragDetach) return;
+        if (!inspectable.showDetachableOutline) return;
+
+        Material baseMat = GetDetachableOutlineMaterial();
+        if (baseMat == null) return;
+
+        Color color = inspectable.detachableOutlineColor;
+        float widthScale = inspectable.detachableOutlineWidthScale;
+
+        for (int i = 0; i < inspectable.detachableParts.Count; i++)
+        {
+            Transform part = inspectable.detachableParts[i];
+            if (part == null) continue;
+            AddDetachableOutline(part.gameObject, baseMat, color, widthScale);
+        }
+    }
+
+    void AddDetachableOutline(GameObject target, Material baseMat, Color color, float widthScale)
+    {
+        if (target == null) return;
+
+        MeshRenderer[] meshRenderers = target.GetComponentsInChildren<MeshRenderer>(true);
+        for (int i = 0; i < meshRenderers.Length; i++)
+        {
+            MeshRenderer mr = meshRenderers[i];
+            float width = ComputeDetachableOutlineWidth(mr.transform, target, widthScale);
+            TryAddDetachableOutlineForRenderer(mr, baseMat, color, width);
+        }
+
+        SkinnedMeshRenderer[] skinned = target.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+        for (int i = 0; i < skinned.Length; i++)
+        {
+            SkinnedMeshRenderer smr = skinned[i];
+            float width = ComputeDetachableOutlineWidth(smr.transform, target, widthScale);
+            TryAddDetachableOutlineForSkinned(smr, baseMat, color, width);
+        }
+    }
+
+    float ComputeDetachableOutlineWidth(Transform rendererTransform, GameObject partRoot, float widthScale)
+    {
+        Bounds bounds = ItemInfoWorldUI.CalculateWorldBounds(partRoot);
+        float maxExtent = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+        float worldWidth = widthScale * Mathf.Max(maxExtent, 0.05f);
+
+        Vector3 lossy = rendererTransform.lossyScale;
+        float avgScale = (Mathf.Abs(lossy.x) + Mathf.Abs(lossy.y) + Mathf.Abs(lossy.z)) / 3f;
+        return worldWidth / Mathf.Max(avgScale, 0.001f);
+    }
+
+    void TryAddDetachableOutlineForRenderer(MeshRenderer mr, Material baseMat, Color color, float width)
+    {
+        if (mr == null || !mr.enabled) return;
+        if (mr.gameObject.name.EndsWith("_InspectOutline")) return;
+
+        MeshFilter mf = mr.GetComponent<MeshFilter>();
+        if (mf == null || mf.sharedMesh == null) return;
+
+        GameObject go = new GameObject(mr.gameObject.name + "_InspectOutline");
+        go.transform.SetParent(mr.transform, false);
+        go.transform.localPosition = Vector3.zero;
+        go.transform.localRotation = Quaternion.identity;
+        go.transform.localScale = Vector3.one;
+        go.layer = mr.gameObject.layer;
+        go.hideFlags = HideFlags.DontSave;
+
+        MeshFilter cloneMf = go.AddComponent<MeshFilter>();
+        cloneMf.sharedMesh = mf.sharedMesh;
+
+        MeshRenderer cloneMr = go.AddComponent<MeshRenderer>();
+        SetupDetachableOutlineRenderer(cloneMr, baseMat, color, width);
+        cloneMr.sortingOrder = 1;
+        detachableOutlineRenderers.Add(go);
+    }
+
+    void TryAddDetachableOutlineForSkinned(SkinnedMeshRenderer smr, Material baseMat, Color color, float width)
+    {
+        if (smr == null || !smr.enabled || smr.sharedMesh == null) return;
+        if (smr.gameObject.name.EndsWith("_InspectOutline")) return;
+
+        GameObject go = new GameObject(smr.gameObject.name + "_InspectOutline");
+        go.transform.SetParent(smr.transform, false);
+        go.transform.localPosition = Vector3.zero;
+        go.transform.localRotation = Quaternion.identity;
+        go.transform.localScale = Vector3.one;
+        go.layer = smr.gameObject.layer;
+        go.hideFlags = HideFlags.DontSave;
+
+        SkinnedMeshRenderer cloneSmr = go.AddComponent<SkinnedMeshRenderer>();
+        cloneSmr.sharedMesh = smr.sharedMesh;
+        cloneSmr.bones = smr.bones;
+        cloneSmr.rootBone = smr.rootBone;
+        SetupDetachableOutlineRenderer(cloneSmr, baseMat, color, width);
+        cloneSmr.sortingOrder = 1;
+        detachableOutlineRenderers.Add(go);
+    }
+
+    static void SetupDetachableOutlineRenderer(Renderer renderer, Material baseMat, Color color, float width)
+    {
+        renderer.material = CreateDetachableOutlineMaterial(baseMat, color, width);
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+    }
+
+    static Material CreateDetachableOutlineMaterial(Material baseMat, Color color, float width)
+    {
+        Material inst = new Material(baseMat);
+        if (inst.HasProperty("_Color"))
+            inst.SetColor("_Color", color);
+        else if (inst.HasProperty("_BaseColor"))
+            inst.SetColor("_BaseColor", color);
+        if (inst.HasProperty("_OutlineWidth"))
+            inst.SetFloat("_OutlineWidth", width);
+        return inst;
+    }
+
+    Material GetDetachableOutlineMaterial()
+    {
+        if (characterInteraction != null && characterInteraction.outlineMaterial != null
+            && characterInteraction.outlineMaterial.shader != null
+            && characterInteraction.outlineMaterial.shader.isSupported)
+            return characterInteraction.outlineMaterial;
+
+        if (detachableOutlineMaterial != null
+            && detachableOutlineMaterial.shader != null
+            && detachableOutlineMaterial.shader.isSupported)
+            return detachableOutlineMaterial;
+
+        Shader shader = Shader.Find("Hemiao/ItemOutline");
+        if (shader == null || !shader.isSupported)
+            shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null || !shader.isSupported)
+            shader = Shader.Find("Unlit/Color");
+        if (shader == null) return null;
+
+        detachableOutlineMaterial = new Material(shader);
+        return detachableOutlineMaterial;
+    }
+
+    void ClearDetachableOutlines()
+    {
+        for (int i = detachableOutlineRenderers.Count - 1; i >= 0; i--)
+        {
+            GameObject go = detachableOutlineRenderers[i];
+            if (go != null)
+                Destroy(go);
+        }
+        detachableOutlineRenderers.Clear();
     }
 }

@@ -33,6 +33,16 @@ public class InspectableItem : MonoBehaviour
     [Range(0.05f, 1f)]
     public float detachScreenRatio = 0.18f;
 
+    [Tooltip("进入审视界面后，为可撕扯子件显示白色描边。")]
+    public bool showDetachableOutline = true;
+
+    [Tooltip("可撕扯子件描边颜色。")]
+    public Color detachableOutlineColor = Color.white;
+
+    [Tooltip("描边宽度系数（世界空间），会乘以子件包围盒最大半径。")]
+    [Range(0f, 0.5f)]
+    public float detachableOutlineWidthScale = 0.08f;
+
     [Tooltip("拖拽鼠标到 3D 世界位移的灵敏度（米/像素）。")]
     public float dragWorldSensitivity = 0.005f;
 
@@ -135,8 +145,40 @@ public class InspectableItem : MonoBehaviour
 
     void Awake()
     {
+        LockAttachedParts();
         if (ignoreSelfCollisionsWhileAttached)
             ApplyCollisionIgnore(true);
+    }
+
+    void OnEnable()
+    {
+        LockAttachedParts();
+    }
+
+    /// <summary>手撕分离时调用：恢复碰撞、从可撕列表移除。</summary>
+    public void ReleaseAttachedPart(Transform part)
+    {
+        if (part == null) return;
+        RestoreCollisionFor(part);
+        detachableParts.Remove(part);
+    }
+
+    void LockAttachedParts()
+    {
+        for (int i = 0; i < detachableParts.Count; i++)
+        {
+            Transform part = detachableParts[i];
+            if (part == null) continue;
+
+            Rigidbody rb = part.GetComponent<Rigidbody>();
+            if (rb == null) continue;
+
+            // 子件在附着阶段不应参与独立物理模拟，否则会在撕扯前就因嵌套 Rigidbody 弹开。
+            if (Application.isPlaying)
+                Destroy(rb);
+            else
+                DestroyImmediate(rb);
+        }
     }
 
     /// <summary>

@@ -59,6 +59,9 @@ public class CharacterInteraction : MonoBehaviour
     [Tooltip("\u65E0 ItemInformation \u7684\u53EF\u4EA4\u4E92\u7269\u4F53\u4F7F\u7528\u7684\u63CF\u8FB9\u989C\u8272\u3002")]
     public Color defaultOutlineColor = Color.white;
 
+    [Tooltip("玩家抓住物品时的描边颜色。")]
+    public Color heldOutlineColor = new Color(1f, 0.85f, 0.1f, 1f);
+
     [Tooltip("\u6309 ItemCategory\uFF1AMetal, OrganicMatter, CoreEnergy, DangerousGoods")]
     public Color[] outlineColorsByCategory = new Color[]
     {
@@ -73,9 +76,9 @@ public class CharacterInteraction : MonoBehaviour
     Rigidbody grabbedRb;
     bool grabbedWasKinematic;
     bool grabbedUseGravity;
-    bool grabbedDetectCollisions;
     RigidbodyInterpolation grabbedInterpolation;
     RigidbodyConstraints grabbedOriginalConstraints;
+    CollisionDetectionMode grabbedCollisionDetection;
 
     GameObject aimedObject;
     RaycastHit aimHit;
@@ -90,6 +93,8 @@ public class CharacterInteraction : MonoBehaviour
 
     readonly List<GameObject> activeOutlines = new List<GameObject>();
     readonly HashSet<GameObject> outlinedRoots = new HashSet<GameObject>();
+    readonly Dictionary<GameObject, Color> outlineColorOverrides = new Dictionary<GameObject, Color>();
+    GameObject heldOutlineRoot;
 
     ItemInfoWorldUI itemInfoUI;
 
@@ -128,23 +133,32 @@ public class CharacterInteraction : MonoBehaviour
         HandleInspectionInput();
     }
 
+    /// <summary>审视结束等时机立即刷新描边（审视期间 Update 被门控跳过）。</summary>
+    public void ForceRefreshInteractionVisuals()
+    {
+        if (cameraTransform == null) return;
+        UpdateAimTarget();
+        RefreshInteractionVisuals();
+    }
+
     void HandleInspectionInput()
     {
         if (grabbedObject == null) return;
         var insp = grabbedObject.GetComponent<InspectableItem>();
         if (insp == null) return;
         if (!Input.GetKeyDown(insp.inspectKey)) return;
+        if (EndDayInteractable.ShouldConsumeInteractKey) return;
         // 干扰（如 TVStaticOverlay）正在显示时，把 E 让给“取消干扰”计数，
         // 避免一边按 E 一边意外进入审视。
         if (TVStaticOverlay.IsActive) return;
         InspectionView.Instance.BeginInspection(grabbedObject, this);
     }
 
-    void LateUpdate()
+    void FixedUpdate()
     {
         if (GameplayInputGate.IsBlocked) return;
         if (grabbedRb == null || holdPoint == null) return;
-        UpdateGrabbedTransform();
+        UpdateGrabbedTransformPhysics();
     }
 
     void UpdateHoldPointDistance()
@@ -180,24 +194,27 @@ public class CharacterInteraction : MonoBehaviour
         holdPoint.localPosition = Vector3.forward * currentHoldDistance;
     }
 
-    void UpdateGrabbedTransform()
+    void UpdateGrabbedTransformPhysics()
     {
-        Transform t = grabbedRb.transform;
-        if (grabFollowSmoothTime <= 0f)
+        Vector3 targetPos = holdPoint.TransformPoint(grabLocalOffset);
+        Quaternion targetRot = holdPoint.rotation;
+
+        if (grabFollowSmoothTime > 0f)
         {
-            t.SetPositionAndRotation(holdPoint.position, holdPoint.rotation);
-            return;
+            targetPos = Vector3.SmoothDamp(
+                grabbedRb.position,
+                targetPos,
+                ref grabFollowVelocity,
+                grabFollowSmoothTime,
+                Mathf.Infinity,
+                Time.fixedDeltaTime);
+
+            float rotLerp = 1f - Mathf.Exp(-Time.fixedDeltaTime / grabFollowSmoothTime);
+            targetRot = Quaternion.Slerp(grabbedRb.rotation, targetRot, rotLerp);
         }
 
-        Vector3 targetPos = holdPoint.TransformPoint(grabLocalOffset);
-        t.position = Vector3.SmoothDamp(
-            t.position,
-            targetPos,
-            ref grabFollowVelocity,
-            grabFollowSmoothTime);
-
-        float rotLerp = 1f - Mathf.Exp(-Time.deltaTime / grabFollowSmoothTime);
-        t.rotation = Quaternion.Slerp(t.rotation, holdPoint.rotation, rotLerp);
+        grabbedRb.MovePosition(targetPos);
+        grabbedRb.MoveRotation(targetRot);
     }
 
     void UpdateAimTarget()
@@ -227,13 +244,21 @@ public class CharacterInteraction : MonoBehaviour
     void RefreshInteractionVisuals()
     {
         HashSet<GameObject> wantOutline = new HashSet<GameObject>();
+        outlineColorOverrides.Clear();
+
         var itemsInRange = CollectItemRootsInRange();
         for (int i = 0; i < itemsInRange.Count; i++)
         {
             GameObject item = itemsInRange[i];
             if (item == null || item == aimedObject || item == grabbedObject) continue;
             wantOutline.Add(item);
+
+            ItemInformation info = item.GetComponent<ItemInformation>();
+            if (info != null && info.overrideOutlineColor)
+                outlineColorOverrides[item] = info.outlineColor;
         }
+
+        CollectDetachablePartsInRange(wantOutline, outlineColorOverrides);
 
         var toRemove = new List<GameObject>();
         foreach (GameObject root in outlinedRoots)
@@ -245,7 +270,20 @@ public class CharacterInteraction : MonoBehaviour
             RemoveOutline(toRemove[i]);
 
         foreach (GameObject root in wantOutline)
-            EnsureOutline(root);
+        {
+            Color? colorOverride = null;
+            if (outlineColorOverrides.TryGetValue(root, out Color c))
+                colorOverride = c;
+            else
+            {
+                ItemInformation info = root.GetComponent<ItemInformation>();
+                if (info != null && info.overrideOutlineColor)
+                    colorOverride = info.outlineColor;
+            }
+            EnsureOutline(root, colorOverride);
+        }
+
+        UpdateHeldOutline();
 
         if (itemInfoUI == null) return;
 
@@ -296,6 +334,34 @@ public class CharacterInteraction : MonoBehaviour
         CollectToolRootsInRange<Knife>(camPos, maxDistSqr, seen, results);
 
         return results;
+    }
+
+    void CollectDetachablePartsInRange(
+        HashSet<GameObject> wantOutline,
+        Dictionary<GameObject, Color> colorOverrides)
+    {
+        if (cameraTransform == null) return;
+
+        float maxDistSqr = maxGrabDistance * maxGrabDistance;
+        Vector3 camPos = cameraTransform.position;
+
+        InspectableItem[] inspectables = FindObjectsOfType<InspectableItem>();
+        for (int i = 0; i < inspectables.Length; i++)
+        {
+            InspectableItem insp = inspectables[i];
+            if (insp == null || !insp.showDetachableOutline) continue;
+
+            for (int p = 0; p < insp.detachableParts.Count; p++)
+            {
+                Transform part = insp.detachableParts[p];
+                if (part == null || !part.gameObject.activeInHierarchy) continue;
+                if (part.gameObject == aimedObject || part.gameObject == grabbedObject) continue;
+                if ((part.position - camPos).sqrMagnitude > maxDistSqr) continue;
+
+                wantOutline.Add(part.gameObject);
+                colorOverrides[part.gameObject] = insp.detachableOutlineColor;
+            }
+        }
     }
 
     static void CollectToolRootsInRange<T>(Vector3 camPos, float maxDistSqr, HashSet<int> seen, List<GameObject> results)
@@ -364,10 +430,44 @@ public class CharacterInteraction : MonoBehaviour
         return null;
     }
 
-    void EnsureOutline(GameObject target)
+    void EnsureOutline(GameObject target, Color? colorOverride = null)
     {
-        if (target == null || outlinedRoots.Contains(target)) return;
-        AddOutline(target);
+        if (target == null) return;
+
+        if (outlinedRoots.Contains(target))
+        {
+            if (colorOverride.HasValue)
+            {
+                RemoveOutline(target);
+                AddOutline(target, colorOverride);
+            }
+            return;
+        }
+
+        AddOutline(target, colorOverride);
+    }
+
+    void UpdateHeldOutline()
+    {
+        if (grabbedObject == null)
+        {
+            if (heldOutlineRoot != null)
+            {
+                RemoveOutline(heldOutlineRoot);
+                heldOutlineRoot = null;
+            }
+            return;
+        }
+
+        if (heldOutlineRoot == grabbedObject && outlinedRoots.Contains(grabbedObject))
+            return;
+
+        if (heldOutlineRoot != null && heldOutlineRoot != grabbedObject)
+            RemoveOutline(heldOutlineRoot);
+
+        RemoveOutline(grabbedObject);
+        AddOutline(grabbedObject, heldOutlineColor);
+        heldOutlineRoot = grabbedObject;
     }
 
     void RemoveOutline(GameObject target)
@@ -472,9 +572,9 @@ public class CharacterInteraction : MonoBehaviour
         grabbedRb = rb;
         grabbedWasKinematic = rb.isKinematic;
         grabbedUseGravity = rb.useGravity;
-        grabbedDetectCollisions = rb.detectCollisions;
         grabbedInterpolation = rb.interpolation;
         grabbedOriginalConstraints = rb.constraints;
+        grabbedCollisionDetection = rb.collisionDetectionMode;
 
         SuspendFromConveyorBelts(rb);
         rb.constraints &= ~RigidbodyConstraints.FreezeRotation;
@@ -484,7 +584,8 @@ public class CharacterInteraction : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
         rb.isKinematic = true;
-        rb.detectCollisions = false;
+        rb.detectCollisions = true;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         currentHoldDistance = GetGrabDistance(rb);
@@ -496,10 +597,10 @@ public class CharacterInteraction : MonoBehaviour
             grabLocalOffset = holdPoint.InverseTransformPoint(rb.position);
         }
 
-        RemoveOutline(grabbedObject);
         if (itemInfoUI != null) itemInfoUI.Hide();
         aimedObject = null;
         Grabbed?.Invoke(grabbedObject);
+        UpdateHeldOutline();
     }
 
     float GetGrabDistance(Rigidbody rb)
@@ -545,15 +646,20 @@ public class CharacterInteraction : MonoBehaviour
         Rigidbody releasedRb = grabbedRb;
         bool wasKinematic = grabbedWasKinematic;
         bool useGravity = grabbedUseGravity;
-        bool detectCollisions = grabbedDetectCollisions;
         RigidbodyInterpolation interpolation = grabbedInterpolation;
         RigidbodyConstraints constraints = grabbedOriginalConstraints;
+        CollisionDetectionMode collisionDetection = grabbedCollisionDetection;
+
+        ResolvePenetrationBeforeRelease(releasedRb);
 
         releasedRb.isKinematic = wasKinematic;
         releasedRb.useGravity = useGravity;
-        releasedRb.detectCollisions = detectCollisions;
+        releasedRb.detectCollisions = true;
         releasedRb.interpolation = interpolation;
         releasedRb.constraints = constraints;
+        releasedRb.collisionDetectionMode = wasKinematic
+            ? collisionDetection
+            : CollisionDetectionMode.ContinuousDynamic;
 
         if (applyThrow)
         {
@@ -572,6 +678,62 @@ public class CharacterInteraction : MonoBehaviour
         grabbedRb = null;
         grabFollowVelocity = Vector3.zero;
         UnsuspendFromConveyorBelts(releasedRb);
+        UpdateHeldOutline();
+    }
+
+    /// <summary>
+    /// 松手前把物体从重叠的静态碰撞体中推出，避免穿地后无法恢复碰撞。
+    /// </summary>
+    static void ResolvePenetrationBeforeRelease(Rigidbody rb)
+    {
+        if (rb == null) return;
+
+        Collider[] ownColliders = rb.GetComponentsInChildren<Collider>(false);
+        if (ownColliders.Length == 0) return;
+
+        const int maxIterations = 10;
+        const float skin = 0.01f;
+
+        for (int iteration = 0; iteration < maxIterations; iteration++)
+        {
+            bool resolvedAny = false;
+
+            for (int i = 0; i < ownColliders.Length; i++)
+            {
+                Collider own = ownColliders[i];
+                if (own == null || !own.enabled || own.isTrigger) continue;
+
+                Bounds bounds = own.bounds;
+                Collider[] overlaps = Physics.OverlapBox(
+                    bounds.center,
+                    bounds.extents,
+                    own.transform.rotation,
+                    ~0,
+                    QueryTriggerInteraction.Ignore);
+
+                for (int j = 0; j < overlaps.Length; j++)
+                {
+                    Collider other = overlaps[j];
+                    if (other == null || other.isTrigger) continue;
+                    if (other.transform.IsChildOf(rb.transform)) continue;
+
+                    if (!Physics.ComputePenetration(
+                            own, own.transform.position, own.transform.rotation,
+                            other, other.transform.position, other.transform.rotation,
+                            out Vector3 direction, out float distance))
+                        continue;
+
+                    if (distance <= 1e-5f) continue;
+
+                    rb.position += direction * (distance + skin);
+                    resolvedAny = true;
+                }
+            }
+
+            if (!resolvedAny) break;
+        }
+
+        Physics.SyncTransforms();
     }
 
     void HandleScrollRotate()
@@ -587,14 +749,14 @@ public class CharacterInteraction : MonoBehaviour
         holdPoint.Rotate(cameraTransform.forward, scroll * rotateSpeed, Space.World);
     }
 
-    void AddOutline(GameObject target)
+    void AddOutline(GameObject target, Color? colorOverride)
     {
         if (target == null || outlinedRoots.Contains(target)) return;
 
         Material baseMat = GetOutlineBaseMaterial();
         if (baseMat == null) return;
 
-        Color outlineColor = GetOutlineColor(target);
+        Color outlineColor = colorOverride ?? GetOutlineColor(target);
         float width = ComputeOutlineWidthForTarget(target);
         int created = 0;
 
@@ -693,9 +855,16 @@ public class CharacterInteraction : MonoBehaviour
         }
 
         if (target == null)
+        {
             outlinedRoots.Clear();
+            heldOutlineRoot = null;
+        }
         else
+        {
             outlinedRoots.Remove(target);
+            if (heldOutlineRoot == target)
+                heldOutlineRoot = null;
+        }
     }
 
     Material GetOutlineBaseMaterial()

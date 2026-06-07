@@ -11,13 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/2Backstory.unity
     guid: abb51d5d8e659ef4f92c22239f64c840
-  - enabled: 0
-    path: Assets/Scenes/2TransitionInterface.unity
-    guid: 3070451990a18e046bf350d878ab88cd
-  - enabled: 0
-    path: Assets/Scenes/3test260527.unity
-    guid: 8d3836ac867eed74caaf968474bee0c6
   - enabled: 1
-    path: Assets/Scenes/3test_A.unity
-    guid: 8bdaeac2502e1de4d8e51852a589131c
+    path: Assets/Scenes/3test260607.unity
+    guid: 294f7dbaf1700d34fa6727a13fd734e0
   m_configObjects: {}

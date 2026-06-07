@@ -196,7 +196,7 @@ PrefabInstance:
     - target: {fileID: 4429637676391708408, guid: 1d11441d895d83d49ba5aef94d6c353e,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.22
+      value: -20.428
       objectReference: {fileID: 0}
     - target: {fileID: 4429637676391708408, guid: 1d11441d895d83d49ba5aef94d6c353e,
         type: 3}
@@ -340,6 +340,9 @@ MonoBehaviour:
   detachableParts:
   - {fileID: 5223361193245831384}
   detachScreenRatio: 0.18
+  showDetachableOutline: 1
+  detachableOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  detachableOutlineWidthScale: 0.08
   dragWorldSensitivity: 0.005
   detachVelocity: 0.5
   inspectionDisplayEulers: {x: 0, y: 90, z: -45}
@@ -359,11 +362,11 @@ MonoBehaviour:
     displayName: "\u91D1\u5C5E\u624B\u81C2"
     description: "\u6252\u6389\u4E86\u6F02\u4EAE\u5916\u8863\u540E\u9732\u51FA\u7684\u786C\u6838\u91D1\u5C5E\u9AA8\u67B6\u3002\u6CA1\u4E86\u76AE\u80A4\u7684\u963B\u788D\uFF0C\u8FD9\u5BB6\u4F19\u73B0\u5728\u7EAF\u7CB9\u5F97\u53EA\u5269\u4E0B\u91CD\u91CF\u3002\u522B\u8BD5\u56FE\u7528\u5B83\u548C\u4E3B\u7BA1\u63E1\u624B\uFF0C\u76F4\u63A5\u628A\u5B83\u72E0\u72E0\u7838\u8FDB\u3010\u91D1\u5C5E\u901A\u9053\u3011\u5427\uFF01"
     overrideCategory: 1
-    category: 1
+    category: 0
     overrideComplexity: 0
     complexity: 0
     overrideCredits: 0
-    creditsOnCorrectThrow: 150
+    creditsOnCorrectThrow: 100
     prankValueLabel: "[ \u94A2\u94C1\u9AA8\u67B6 / \u7EC8\u7ED3\u8005\u540C\u6B3E
       ]"
   partInfos:
@@ -376,7 +379,7 @@ MonoBehaviour:
     overrideComplexity: 0
     complexity: 0
     overrideCredits: 0
-    creditsOnCorrectThrow: 70
+    creditsOnCorrectThrow: 150
     prankValueLabel: "[ \u539F\u88C5\u6B63\u54C1 / \u5C40\u90E8\u624B\u6495\u9762\u819C
       ]"
 --- !u!114 &8722988940871931281
@@ -398,7 +401,7 @@ MonoBehaviour:
   separateDropInitialSpeed: 0.5
   destroySelfAfterCut: 0
   abandonedMixtureMessage: Abandoned mixture
-  abandonedMixtureCredits: 1
+  abandonedMixtureCredits: -50
   shellInfo:
     targetPart: {fileID: 0}
     note: 

@@ -14,8 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelNumber: 1
   displayName: Level 1
-  levelDurationSeconds: 120
+  levelDurationSeconds: 200
   spawnPrefabs: []
+  complexityComposition:
+    basicWeight: 1
+    compositeWeight: 0
+    dangerousWeight: 0
   spawnInterval: 1
   itemsPerBurst: 5
   spawnSpreadRadius: 0.3
@@ -25,4 +29,9 @@ MonoBehaviour:
   maxTotalItems: 0
   autoStartSpawning: 1
   sceneProps: []
+  aisles: []
+  interferences: []
   designNotes: 
+  showTutorialBeforeLevel: 1
+  tutorialTitle: 
+  tutorialBody: 

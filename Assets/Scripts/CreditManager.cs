@@ -8,8 +8,31 @@ public class CreditManager : MonoBehaviour
     [Tooltip("\u5F53\u524D\u79EF\u5206")]
     public int credits;
 
-    /// <summary>\u79EF\u5206\u53D8\u5316\u65F6\u89E6\u53D1\uFF0C\u53C2\u6570\u4E3A\u5F53\u524D\u603B\u989D\u3002</summary>
+    /// <summary>积分变化时触发，参数为当前总额。</summary>
     public event Action<int> OnCreditsChanged;
+
+    /// <summary>连续正确投掷连击数变化时触发。</summary>
+    public event Action<int> OnThrowComboChanged;
+
+    [Header("连击")]
+    [Tooltip("每达到该连击数，正确投掷奖励增加 comboBonusPercentPerTier%。")]
+    [SerializeField] int comboTierSize = 5;
+
+    [Tooltip("每个连击档位增加的奖励百分比。")]
+    [SerializeField] int comboBonusPercentPerTier = 10;
+
+    int throwComboCount;
+
+    /// <summary>当前连续正确投掷连击数。</summary>
+    public int ThrowComboCount => throwComboCount;
+
+    public struct CorrectThrowAward
+    {
+        public int baseCredits;
+        public int awardedCredits;
+        public int combo;
+        public int bonusPercent;
+    }
 
     string subtitle;
     float subtitleEndTime;
@@ -32,10 +55,12 @@ public class CreditManager : MonoBehaviour
         NotifyCreditsChanged();
     }
 
-    public void AddCredits(int amount)
+    public void AddCredits(int amount, bool playSfx = true)
     {
         if (amount == 0) return;
         credits += amount;
+        if (playSfx && amount > 0 && SfxManager.Instance != null)
+            SfxManager.Instance.PlayCoin();
         NotifyCreditsChanged();
     }
 
@@ -47,6 +72,56 @@ public class CreditManager : MonoBehaviour
         credits -= amount;
         NotifyCreditsChanged();
         return true;
+    }
+
+    /// <summary>连续正确投掷：递增连击并按档位加成后发放信用点。</summary>
+    public CorrectThrowAward AwardCorrectThrowCredits(int baseCredits, bool playSfx = false)
+    {
+        throwComboCount = Mathf.Max(0, throwComboCount + 1);
+        int bonusPercent = GetThrowComboBonusPercent(throwComboCount);
+        float multiplier = 1f + bonusPercent / 100f;
+        int awarded = baseCredits == 0
+            ? 0
+            : Mathf.Max(0, Mathf.RoundToInt(baseCredits * multiplier));
+
+        if (awarded != 0)
+            AddCredits(awarded, playSfx);
+
+        OnThrowComboChanged?.Invoke(throwComboCount);
+
+        return new CorrectThrowAward
+        {
+            baseCredits = baseCredits,
+            awardedCredits = awarded,
+            combo = throwComboCount,
+            bonusPercent = bonusPercent
+        };
+    }
+
+    public void ResetThrowCombo()
+    {
+        if (throwComboCount == 0) return;
+        throwComboCount = 0;
+        OnThrowComboChanged?.Invoke(0);
+    }
+
+    public int GetThrowComboBonusPercent(int combo)
+    {
+        if (comboTierSize <= 0 || comboBonusPercentPerTier <= 0 || combo <= 0)
+            return 0;
+        return combo / comboTierSize * comboBonusPercentPerTier;
+    }
+
+    public static string FormatCorrectThrowSubtitle(CorrectThrowAward award)
+    {
+        int delta = award.awardedCredits;
+        string text = delta >= 0 ? $"+{delta} credits" : $"{delta} credits";
+        if (award.combo <= 1) return text;
+
+        if (award.bonusPercent > 0)
+            return $"{text}  Combo x{award.combo} (+{award.bonusPercent}%)";
+
+        return $"{text}  Combo x{award.combo}";
     }
 
     void NotifyCreditsChanged()

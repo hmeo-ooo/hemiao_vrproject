@@ -31,11 +31,11 @@ public class Cuttable : MonoBehaviour
     public bool destroySelfAfterCut = false;
 
     [Header("未切开投入通道")]
-    [Tooltip("仍保持外壳与子物体组合时扔进通道，显示的黄色字幕。")]
+    [Tooltip("仍保持外壳与子物体组合时扔进通道显示的字幕。")]
     public string abandonedMixtureMessage = "Abandoned mixture";
 
-    [Tooltip("未切开投入通道时增加的信用点。")]
-    public int abandonedMixtureCredits = 1;
+    [Tooltip("未切开投入通道时的信用点变化（填负数表示惩罚）。")]
+    public int abandonedMixtureCredits = -50;
 
     [Header("切割后的物品信息")]
     [Tooltip("外壳分离后应当呈现的 ItemInformation 数据。留空则保留原有数据（多半是整体复合物的介绍，可能与外壳本身不符）。")]
@@ -76,19 +76,24 @@ public class Cuttable : MonoBehaviour
         Separate();
     }
 
-    /// <summary>整件未切开时投入分拣通道：黄色字幕 + 少量信用点，并销毁整组物体。</summary>
+    /// <summary>整件未切开时投入分拣通道：惩罚信用点并销毁整组物体。</summary>
     public void HandleAbandonedMixtureInAisle()
     {
         if (CreditManager.Instance != null)
         {
-            CreditManager.Instance.AddCredits(abandonedMixtureCredits);
-            string msg = string.IsNullOrEmpty(abandonedMixtureMessage)
+            if (abandonedMixtureCredits != 0)
+                CreditManager.Instance.AddCredits(abandonedMixtureCredits);
+
+            string creditText = abandonedMixtureCredits >= 0
                 ? $"+{abandonedMixtureCredits} credits"
-                : $"{abandonedMixtureMessage} (+{abandonedMixtureCredits})";
-            CreditManager.Instance.ShowSubtitle(
-                msg,
-                2f,
-                new Color(1f, 0.92f, 0.2f, 1f));
+                : $"{abandonedMixtureCredits} credits";
+            string msg = string.IsNullOrEmpty(abandonedMixtureMessage)
+                ? creditText
+                : $"{abandonedMixtureMessage} ({creditText})";
+            Color subtitleColor = abandonedMixtureCredits >= 0
+                ? new Color(1f, 0.92f, 0.2f, 1f)
+                : new Color(1f, 0.3f, 0.3f, 1f);
+            CreditManager.Instance.ShowSubtitle(msg, 2f, subtitleColor);
         }
 
         Destroy(gameObject);
@@ -135,6 +140,9 @@ public class Cuttable : MonoBehaviour
     {
         if (cut) return;
         cut = true;
+
+        if (SfxManager.Instance != null)
+            SfxManager.Instance.PlayCut(transform.position);
 
         ReleaseFromWorkTables();
 

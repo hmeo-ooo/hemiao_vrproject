@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelNumber: 3
   displayName: Level 3
-  levelDurationSeconds: 60
+  levelDurationSeconds: 200
   spawnPrefabs:
   - {fileID: 26042307918521241, guid: 94a92b7abc64bc3489927de1cc85257b, type: 3}
   - {fileID: 2901559934276544025, guid: 30042e6265dd1e64d9b9c9677e3fe5ae, type: 3}
@@ -24,15 +24,15 @@ MonoBehaviour:
   - {fileID: 4843321675143679443, guid: 16d61dfc72572c1418da46ae945962d2, type: 3}
   complexityComposition:
     basicWeight: 5
-    compositeWeight: 4
-    dangerousWeight: 1
-  spawnInterval: 1
-  itemsPerBurst: 5
+    compositeWeight: 4.5
+    dangerousWeight: 0.5
+  spawnInterval: 2
+  itemsPerBurst: 1
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 10
-  maxTotalItems: 25
+  maxActiveItems: 40
+  maxTotalItems: 40
   autoStartSpawning: 1
   sceneProps:
   - prefab: {fileID: 4969296450780851133, guid: aa67904ddd247d241afa5f29fba135f1,

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelNumber: 2
   displayName: Level 2
-  levelDurationSeconds: 60
+  levelDurationSeconds: 200
   spawnPrefabs:
   - {fileID: 26042307918521241, guid: 94a92b7abc64bc3489927de1cc85257b, type: 3}
   - {fileID: 2901559934276544025, guid: 30042e6265dd1e64d9b9c9677e3fe5ae, type: 3}
@@ -25,13 +25,13 @@ MonoBehaviour:
     basicWeight: 6
     compositeWeight: 4
     dangerousWeight: 0
-  spawnInterval: 1
-  itemsPerBurst: 5
+  spawnInterval: 2
+  itemsPerBurst: 1
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 10
-  maxTotalItems: 25
+  maxActiveItems: 40
+  maxTotalItems: 40
   autoStartSpawning: 1
   sceneProps:
   - prefab: {fileID: 4969296450780851133, guid: aa67904ddd247d241afa5f29fba135f1,

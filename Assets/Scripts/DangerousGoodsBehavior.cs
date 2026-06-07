@@ -31,6 +31,9 @@ public class DangerousGoodsBehavior : MonoBehaviour
     [Tooltip("是否只销毁带 ItemInformation 的物品（推荐开启，避免误伤场景固件）。")]
     public bool onlyAffectItems = true;
 
+    [Tooltip("爆炸时扣除的信用点（填负数）。")]
+    public int explosionCreditPenalty = -100;
+
     [Header("视觉")]
     [Tooltip("基础闪烁色（叠加到材质 _Color/_BaseColor 上）。")]
     public Color blinkColor = new Color(1f, 0.1f, 0.1f, 1f);
@@ -56,6 +59,7 @@ public class DangerousGoodsBehavior : MonoBehaviour
     bool _touched;
     bool _exploded;
     bool _initialized;
+    bool _alarmRegistered;
 
     Renderer[] _renderers;
     MaterialPropertyBlock _mpb;
@@ -84,6 +88,12 @@ public class DangerousGoodsBehavior : MonoBehaviour
         _touched = false;
         _exploded = false;
         _initialized = true;
+
+        if (SfxManager.Instance != null)
+        {
+            SfxManager.Instance.RegisterDangerousGoods();
+            _alarmRegistered = true;
+        }
     }
 
     void OnDisable()
@@ -93,6 +103,10 @@ public class DangerousGoodsBehavior : MonoBehaviour
 
         RestoreOriginalLook();
         _initialized = false;
+
+        if (_alarmRegistered && SfxManager.Instance != null)
+            SfxManager.Instance.UnregisterDangerousGoods();
+        _alarmRegistered = false;
     }
 
     void Update()
@@ -235,11 +249,23 @@ public class DangerousGoodsBehavior : MonoBehaviour
 
         Vector3 center = transform.position;
 
+        if (SfxManager.Instance != null)
+            SfxManager.Instance.PlayExplosion(center);
+
         if (_character != null && _character.IsHoldingObject)
             _character.ForceReleaseIfHolding(gameObject);
 
         if (CreditManager.Instance != null)
-            CreditManager.Instance.ShowSubtitle("Dangerous goods detonated!", 1.5f, new Color(1f, 0.3f, 0.3f));
+        {
+            CreditManager.Instance.ResetThrowCombo();
+
+            if (explosionCreditPenalty != 0)
+                CreditManager.Instance.AddCredits(explosionCreditPenalty);
+            string subtitle = explosionCreditPenalty != 0
+                ? $"Dangerous goods detonated! ({explosionCreditPenalty} credits)"
+                : "Dangerous goods detonated!";
+            CreditManager.Instance.ShowSubtitle(subtitle, 1.5f, new Color(1f, 0.3f, 0.3f));
+        }
 
         HashSet<GameObject> toDestroy = new HashSet<GameObject> { gameObject };
 

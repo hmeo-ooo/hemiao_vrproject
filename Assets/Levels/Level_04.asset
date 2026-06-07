@@ -14,24 +14,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelNumber: 4
   displayName: Level 4
-  levelDurationSeconds: 60
+  levelDurationSeconds: 200
   spawnPrefabs:
   - {fileID: 26042307918521241, guid: 94a92b7abc64bc3489927de1cc85257b, type: 3}
   - {fileID: 2901559934276544025, guid: 30042e6265dd1e64d9b9c9677e3fe5ae, type: 3}
   - {fileID: 1742078769820402944, guid: ba702c496b69f824885007ee597b534f, type: 3}
   - {fileID: 3704749408383989885, guid: 1ab114ac450a3b545a7b1186116d92fa, type: 3}
   - {fileID: 4843321675143679443, guid: 16d61dfc72572c1418da46ae945962d2, type: 3}
+  - {fileID: 3141784630288663075, guid: 43bd9b6b9e653034389c253125345b12, type: 3}
   complexityComposition:
     basicWeight: 5
-    compositeWeight: 4
-    dangerousWeight: 1
-  spawnInterval: 1
-  itemsPerBurst: 5
+    compositeWeight: 4.5
+    dangerousWeight: 0.5
+  spawnInterval: 2
+  itemsPerBurst: 1
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 13
-  maxTotalItems: 25
+  maxActiveItems: 40
+  maxTotalItems: 40
   autoStartSpawning: 1
   sceneProps:
   - prefab: {fileID: 4969296450780851133, guid: aa67904ddd247d241afa5f29fba135f1,
@@ -69,7 +70,7 @@ MonoBehaviour:
     localScale: {x: 3, y: 3, z: 3}
   interferences:
   - type: 0
-    triggerAtSeconds: 10
+    triggerAtSeconds: 68
     durationSeconds: 10
     intensity: 0.45
     noiseFps: 24

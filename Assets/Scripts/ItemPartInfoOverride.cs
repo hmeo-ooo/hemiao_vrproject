@@ -41,13 +41,19 @@ public class ItemPartInfoOverride
     [Tooltip("恶搞价值标签。留空时保留原标签。")]
     public string prankValueLabel;
 
+    [Tooltip("是否覆盖描边颜色。默认不覆盖，与 ItemSpawner 生成物一样按 category 着色。")]
+    public bool overrideOutlineColor = false;
+
+    public Color outlineColor = Color.white;
+
     public bool HasAnyContent =>
         !string.IsNullOrWhiteSpace(displayName)
         || !string.IsNullOrWhiteSpace(description)
         || overrideCategory
         || overrideComplexity
         || overrideCredits
-        || !string.IsNullOrWhiteSpace(prankValueLabel);
+        || !string.IsNullOrWhiteSpace(prankValueLabel)
+        || overrideOutlineColor;
 
     public void ApplyTo(Transform part)
     {
@@ -69,5 +75,11 @@ public class ItemPartInfoOverride
 
         if (!string.IsNullOrWhiteSpace(prankValueLabel))
             ii.prankValueLabel = prankValueLabel;
+
+        if (overrideOutlineColor)
+        {
+            ii.overrideOutlineColor = true;
+            ii.outlineColor = outlineColor;
+        }
     }
 }

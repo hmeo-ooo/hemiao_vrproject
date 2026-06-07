@@ -52,6 +52,16 @@ public class ItemSpawner : MonoBehaviour
     private readonly HashSet<GameObject> _activeItems = new HashSet<GameObject>();
     private int _totalSpawnedCount;
 
+    private SpawnQuotaGroup _sharedQuota;
+
+    /// <summary>设置共享配额。设置后，本 Spawner 的 maxActiveItems / maxTotalItems 检查会使用共享值。传 null 解除共享。</summary>
+    public void SetSharedQuota(SpawnQuotaGroup quota)
+    {
+        _sharedQuota = quota;
+    }
+
+    public SpawnQuotaGroup SharedQuota => _sharedQuota;
+
     private readonly List<GameObject> _bucketBasic = new List<GameObject>();
     private readonly List<GameObject> _bucketComposite = new List<GameObject>();
     private readonly List<GameObject> _bucketDangerous = new List<GameObject>();
@@ -99,6 +109,20 @@ public class ItemSpawner : MonoBehaviour
     {
         if (_spawnRoutine != null) return;
         _spawnRoutine = StartCoroutine(SpawnLoop());
+        Debug.Log($"[ItemSpawner] StartSpawning: prefabs={itemPrefabs?.Length ?? 0}, " +
+                  $"interval={spawnInterval}, burst={itemsPerBurst}, " +
+                  $"maxActive={maxActiveItems}, maxTotal={maxTotalItems}", this);
+    }
+
+    [ContextMenu("Force Spawn Burst (Debug)")]
+    void DebugForceSpawnBurst()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("[ItemSpawner] Force spawn only works in Play mode.", this);
+            return;
+        }
+        SpawnBurst();
     }
 
     public void StopSpawning()
@@ -108,12 +132,14 @@ public class ItemSpawner : MonoBehaviour
         _spawnRoutine = null;
     }
 
+    public bool IsSpawningActive => _spawnRoutine != null;
+
     private IEnumerator SpawnLoop()
     {
         while (true)
         {
-            yield return new WaitForSeconds(spawnInterval);
             SpawnBurst();
+            yield return new WaitForSeconds(spawnInterval);
         }
     }
 
@@ -128,15 +154,14 @@ public class ItemSpawner : MonoBehaviour
         if (IsTotalSpawnLimitReached()) return;
 
         int count = itemsPerBurst;
-        if (maxActiveItems > 0)
-        {
-            int room = maxActiveItems - _activeItems.Count;
-            if (room <= 0) return;
-            count = Mathf.Min(count, room);
-        }
 
-        if (maxTotalItems > 0)
-            count = Mathf.Min(count, maxTotalItems - _totalSpawnedCount);
+        int activeRoom = GetActiveRoom();
+        if (activeRoom <= 0) return;
+        count = Mathf.Min(count, activeRoom);
+
+        int totalRoom = GetTotalRoom();
+        if (totalRoom <= 0) return;
+        count = Mathf.Min(count, totalRoom);
 
         if (count <= 0) return;
 
@@ -173,6 +198,7 @@ public class ItemSpawner : MonoBehaviour
 
         _activeItems.Add(instance);
         _totalSpawnedCount++;
+        _sharedQuota?.OnItemSpawned();
         var notifier = instance.AddComponent<ItemLifetimeNotifier>();
         notifier.Initialize(this, instance);
         return true;
@@ -180,7 +206,22 @@ public class ItemSpawner : MonoBehaviour
 
     bool IsTotalSpawnLimitReached()
     {
+        if (_sharedQuota != null) return !_sharedQuota.HasTotalQuota();
         return maxTotalItems > 0 && _totalSpawnedCount >= maxTotalItems;
+    }
+
+    int GetActiveRoom()
+    {
+        if (_sharedQuota != null) return _sharedQuota.RoomForActive();
+        if (maxActiveItems <= 0) return int.MaxValue;
+        return Mathf.Max(0, maxActiveItems - _activeItems.Count);
+    }
+
+    int GetTotalRoom()
+    {
+        if (_sharedQuota != null) return _sharedQuota.RoomForTotal();
+        if (maxTotalItems <= 0) return int.MaxValue;
+        return Mathf.Max(0, maxTotalItems - _totalSpawnedCount);
     }
 
     /// <summary>
@@ -256,7 +297,7 @@ public class ItemSpawner : MonoBehaviour
     /// <summary>
     /// 从预制体复制 ItemInformation；若实例上没有则自动添加。
     /// </summary>
-    static void EnsureItemInformation(GameObject instance, GameObject prefab)
+    public static void EnsureItemInformation(GameObject instance, GameObject prefab)
     {
         if (instance == null) return;
 
@@ -279,9 +320,23 @@ public class ItemSpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// 确保实例有 Rigidbody，并尽可能添加 Collider，不修改 prefab 资源本身。
+    /// 将撕扯/切割后独立在场的物品初始化成与 Spawner 生成物相同的状态（物理 + 按 category 描边）。
     /// </summary>
-    private static void EnsurePhysics(GameObject instance)
+    public static void FinalizeLooseItem(GameObject instance)
+    {
+        if (instance == null) return;
+
+        EnsurePhysics(instance);
+
+        var info = instance.GetComponent<ItemInformation>();
+        if (info != null)
+            info.overrideOutlineColor = false;
+    }
+
+    /// <summary>
+    /// 确保实例有 Rigidbody 与 Collider，与 Spawner 生成物一致。
+    /// </summary>
+    public static void EnsurePhysics(GameObject instance)
     {
         var rb = instance.GetComponent<Rigidbody>();
         if (rb == null)
@@ -289,6 +344,8 @@ public class ItemSpawner : MonoBehaviour
 
         rb.useGravity = true;
         rb.isKinematic = false;
+        rb.detectCollisions = true;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
         if (instance.GetComponentInChildren<Collider>() != null)
             return;
@@ -337,7 +394,8 @@ public class ItemSpawner : MonoBehaviour
     internal void NotifyItemDestroyed(GameObject item)
     {
         if (item == null) return;
-        _activeItems.Remove(item);
+        if (_activeItems.Remove(item))
+            _sharedQuota?.OnItemDestroyed();
     }
 
     public int GetActiveItemCount()
@@ -378,12 +436,17 @@ public class ItemSpawner : MonoBehaviour
         if (_activeItems.Count > 0)
         {
             var snapshot = new List<GameObject>(_activeItems);
+            _activeItems.Clear();
+
             for (int i = 0; i < snapshot.Count; i++)
             {
-                if (snapshot[i] != null)
-                    Destroy(snapshot[i]);
+                GameObject go = snapshot[i];
+                if (go == null) continue;
+
+                // 先同步共享配额：Clear 后 OnDestroy 里 Remove 会失败，导致计数泄漏。
+                _sharedQuota?.OnItemDestroyed();
+                Destroy(go);
             }
-            _activeItems.Clear();
         }
 
         ResetTotalSpawnedCount();
@@ -415,6 +478,54 @@ public class ItemSpawner : MonoBehaviour
     private void OnDisable()
     {
         StopSpawning();
+    }
+
+    /// <summary>多 Spawner 共享的活跃数 / 累计上限。由外部（如 LevelManager）创建并下发到每个 Spawner。</summary>
+    public class SpawnQuotaGroup
+    {
+        public int maxActiveItems;
+        public int maxTotalItems;
+
+        public int CurrentActive { get; private set; }
+        public int TotalSpawned { get; private set; }
+
+        public bool HasTotalQuota() => maxTotalItems <= 0 || TotalSpawned < maxTotalItems;
+        public bool HasActiveRoom() => maxActiveItems <= 0 || CurrentActive < maxActiveItems;
+
+        public int RoomForActive()
+        {
+            if (maxActiveItems <= 0) return int.MaxValue;
+            return Mathf.Max(0, maxActiveItems - CurrentActive);
+        }
+
+        public int RoomForTotal()
+        {
+            if (maxTotalItems <= 0) return int.MaxValue;
+            return Mathf.Max(0, maxTotalItems - TotalSpawned);
+        }
+
+        public void Configure(int maxActive, int maxTotal)
+        {
+            maxActiveItems = Mathf.Max(0, maxActive);
+            maxTotalItems = Mathf.Max(0, maxTotal);
+        }
+
+        public void Reset()
+        {
+            CurrentActive = 0;
+            TotalSpawned = 0;
+        }
+
+        public void OnItemSpawned()
+        {
+            CurrentActive++;
+            TotalSpawned++;
+        }
+
+        public void OnItemDestroyed()
+        {
+            if (CurrentActive > 0) CurrentActive--;
+        }
     }
 
     private class ItemLifetimeNotifier : MonoBehaviour

@@ -465,6 +465,13 @@ public class WorkTable : MonoBehaviour
         if (draggingRotate) EndDragRotation();
     }
 
+    /// <summary>关卡结束时由 LevelManager 调用，释放桌面引用（物体将由外部销毁）。</summary>
+    public void ClearForLevelEnd()
+    {
+        ClearPlacedState();
+        SetOutlineActive(false);
+    }
+
     // ---------- 描边 ----------
 
     void SetOutlineActive(bool active)

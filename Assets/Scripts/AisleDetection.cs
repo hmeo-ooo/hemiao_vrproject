@@ -16,6 +16,9 @@ public class AisleDetection : MonoBehaviour
     [Tooltip("\u662F\u5426\u5728\u63A7\u5236\u53F0\u8F93\u51FA\u8C03\u8BD5\u65E5\u5FD7")]
     public bool debugLogging = true;
 
+    [Tooltip("投入错误通道时扣除的信用点（填负数）。")]
+    public int wrongAislePenalty = -50;
+
     HashSet<int> processedInstanceIds = new HashSet<int>();
 
     void Reset()
@@ -54,8 +57,9 @@ public class AisleDetection : MonoBehaviour
 
             MarkAssemblyProcessed(cuttable.gameObject);
             if (debugLogging)
-                Debug.Log($"[AisleDetection] {cuttable.name} abandoned mixture, +{cuttable.abandonedMixtureCredits} credits.");
+                Debug.Log($"[AisleDetection] {cuttable.name} abandoned mixture, {cuttable.abandonedMixtureCredits} credits.");
 
+            CreditManager.Instance?.ResetThrowCombo();
             cuttable.HandleAbandonedMixtureInAisle();
             return;
         }
@@ -79,15 +83,18 @@ public class AisleDetection : MonoBehaviour
 
         if (info.category == aisleCategory)
         {
-            int delta = info.creditsOnCorrectThrow;
+            int baseCredits = info.creditsOnCorrectThrow;
             if (debugLogging)
-                Debug.Log($"[AisleDetection] match {info.gameObject.name} category={info.category}, +{delta} credits (prefab value on instance).");
+                Debug.Log($"[AisleDetection] match {info.gameObject.name} category={info.category}, base={baseCredits} credits.");
+
+            if (SfxManager.Instance != null)
+                SfxManager.Instance.PlayCorrectThrow();
+
             if (CreditManager.Instance != null)
             {
-                if (delta != 0)
-                    CreditManager.Instance.AddCredits(delta);
+                var award = CreditManager.Instance.AwardCorrectThrowCredits(baseCredits, playSfx: false);
                 CreditManager.Instance.ShowSubtitle(
-                    delta >= 0 ? $"+{delta} credits" : $"{delta} credits",
+                    CreditManager.FormatCorrectThrowSubtitle(award),
                     1.5f,
                     new Color(0.4f, 1f, 0.4f, 1f));
             }
@@ -98,8 +105,21 @@ public class AisleDetection : MonoBehaviour
         else
         {
             if (debugLogging) Debug.Log($"[AisleDetection] mismatch, error subtitle. expected {aisleCategory}, got {info.category}.");
+
+            CreditManager.Instance?.ResetThrowCombo();
+
+            if (SfxManager.Instance != null)
+                SfxManager.Instance.PlayWrongThrow();
+
             if (CreditManager.Instance != null)
-                CreditManager.Instance.ShowSubtitle("error", 2f);
+            {
+                if (wrongAislePenalty != 0)
+                    CreditManager.Instance.AddCredits(wrongAislePenalty);
+                CreditManager.Instance.ShowSubtitle(
+                    wrongAislePenalty != 0 ? $"{wrongAislePenalty} credits" : "error",
+                    2f,
+                    Color.red);
+            }
             Destroy(info.gameObject);
         }
 

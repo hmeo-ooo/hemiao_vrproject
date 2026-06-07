@@ -65,8 +65,12 @@ public class ConveyorBelt : MonoBehaviour
     private string _texturePropertyName = null;
     private Vector3[] _cachedPathPositions;
 
-    [SerializeField, HideInInspector]
-    private bool _debugPrintCount = false;
+    [Header("贴图滚动（可选）")]
+    [Tooltip("用于贴图滚动的 Renderer；留空则在本物体或子物体中自动查找。")]
+    [SerializeField] Renderer beltRenderer;
+
+    [Tooltip("找不到 Renderer 时仅禁用贴图滚动，不影响传送带物理。")]
+    [SerializeField] bool logMissingRenderer;
 
     private class ContactInfo
     {
@@ -76,37 +80,46 @@ public class ConveyorBelt : MonoBehaviour
         public bool storedConstraints;
     }
 
-    private void Awake()
+    [SerializeField, HideInInspector]
+    private bool _debugPrintCount = false;
+
+    void Awake()
     {
-        _renderer = GetComponent<Renderer>();
-        if (_renderer != null)
-        {
-            _material = _renderer.material;
-            if (_material == null)
-            {
-                Debug.LogWarning($"[{nameof(ConveyorBelt)}] ???????????????{name}");
-            }
-            else if (_material.HasProperty("_BaseMap"))
-            {
-                _texturePropertyName = "_BaseMap";
-            }
-            else if (_material.HasProperty("_MainTex"))
-            {
-                _texturePropertyName = "_MainTex";
-            }
-            else
-            {
-                Debug.LogWarning($"[{nameof(ConveyorBelt)}] ????????? _BaseMap ?? _MainTex??{name}");
-                _texturePropertyName = null;
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"[{nameof(ConveyorBelt)}] ????? Renderer ?????{name}");
-        }
+        ResolveRendererAndMaterial();
 
         if (fixedDirection == Vector3.zero) fixedDirection = transform.forward;
         CachePathPositions();
+    }
+
+    void ResolveRendererAndMaterial()
+    {
+        _renderer = beltRenderer;
+        if (_renderer == null)
+            _renderer = GetComponent<Renderer>();
+        if (_renderer == null)
+            _renderer = GetComponentInChildren<Renderer>();
+
+        if (_renderer == null)
+        {
+            if (logMissingRenderer)
+                Debug.Log($"[{nameof(ConveyorBelt)}] No Renderer on '{name}' — texture scroll disabled; physics still works.", this);
+            return;
+        }
+
+        _material = _renderer.material;
+        if (_material == null)
+        {
+            if (logMissingRenderer)
+                Debug.LogWarning($"[{nameof(ConveyorBelt)}] Renderer has no material on '{name}'.", this);
+            return;
+        }
+
+        if (_material.HasProperty("_BaseMap"))
+            _texturePropertyName = "_BaseMap";
+        else if (_material.HasProperty("_MainTex"))
+            _texturePropertyName = "_MainTex";
+        else if (logMissingRenderer)
+            Debug.LogWarning($"[{nameof(ConveyorBelt)}] Material has no _BaseMap or _MainTex on '{name}'.", this);
     }
 
     private void OnValidate()

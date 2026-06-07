@@ -149,6 +149,8 @@ public class LevelSessionController : MonoBehaviour
     void OnCountdownFinished()
     {
         if (!_roundActive) return;
+        if (SfxManager.Instance != null)
+            SfxManager.Instance.PlayRoundEnd();
         EndRoundAndShowHub(advanceLevelAfterRound);
     }
 
@@ -203,6 +205,7 @@ public class LevelSessionController : MonoBehaviour
         }
 
         _roundActive = true;
+        CreditManager.Instance?.ResetThrowCombo();
         levelHubUI?.Hide();
         GameplayInputGate.SetBlocked(false);
         SetGameplayHudVisible(true);
@@ -237,6 +240,22 @@ public class LevelSessionController : MonoBehaviour
         }
 
         PrepareLevelAndShowHub(nextIndex);
+    }
+
+    /// <summary>
+    /// 场上物品全部处理完毕后，玩家通过 bed 等交互点提前结束本关。
+    /// </summary>
+    public void EndRoundEarly()
+    {
+        if (!_roundActive) return;
+
+        LevelManager lm = levelManager != null ? levelManager : LevelManager.Instance;
+        if (lm == null || !lm.IsAllItemsProcessed()) return;
+
+        if (SfxManager.Instance != null)
+            SfxManager.Instance.PlayRoundEnd();
+
+        EndRoundAndShowHub(advanceLevelAfterRound);
     }
 
     void Update()
@@ -368,9 +387,7 @@ public class LevelSessionController : MonoBehaviour
             CacheGameplayHudCanvas();
 
         if (_gameplayHudCanvas != null && visible && _gameplayHudCanvas.transform.localScale.sqrMagnitude < 0.0001f)
-            _gameplayHudCanvas.transform.localScale = _gameplayHudCanvasScale.sqrMagnitude > 0.0001f
-                ? _gameplayHudCanvasScale
-                : Vector3.one;
+            _gameplayHudCanvas.transform.localScale = Vector3.one;
     }
 
     void RefreshGameplayDayText()

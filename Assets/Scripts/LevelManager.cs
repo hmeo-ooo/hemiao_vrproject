@@ -16,6 +16,14 @@ public class LevelManager : MonoBehaviour
     [Header("引用")]
     public ItemSpawner itemSpawner;
 
+    [Tooltip("可选：除主 ItemSpawner 之外、同样接受关卡掉落配置覆盖的额外 Spawner。")]
+    public ItemSpawner[] additionalItemSpawners;
+
+    [Tooltip("启用后，所有被本 LevelManager 管理的 Spawner 共享 maxActiveItems / maxTotalItems。")]
+    public bool shareSpawnQuotaAcrossSpawners = true;
+
+    readonly ItemSpawner.SpawnQuotaGroup _sharedSpawnQuota = new ItemSpawner.SpawnQuotaGroup();
+
     [Tooltip("本关静态道具生成到此节点下；留空则使用自身 Transform。")]
     public Transform propsRoot;
 
@@ -28,6 +36,10 @@ public class LevelManager : MonoBehaviour
 
     [Tooltip("关卡定义了通道列表时，是否隐藏场景中原本摆好的通道（避免重复）。")]
     public bool hideSceneAislesWhenUsingLevelLayout = true;
+
+    [Header("回合结束清理")]
+    [Tooltip("关卡结束或切换时，销毁场上所有带 ItemInformation 的物体（含切割碎片、传送带上、玩家手中的物品）。")]
+    public bool clearGameplayItemsOnEnd = true;
 
     [Header("启动")]
     [Tooltip("进入场景时仅准备关卡数据（不开始掉落）；通常由 LevelSessionController 接管流程。")]
@@ -153,8 +165,7 @@ public class LevelManager : MonoBehaviour
 
         if (IsGameplayActive) return;
 
-        if (itemSpawner != null && CurrentLevel.autoStartSpawning)
-            itemSpawner.StartSpawning();
+        ForEachManagedSpawner(s => s.StartSpawning());
 
         IsGameplayActive = true;
         LevelGameplayStarted?.Invoke();
@@ -163,13 +174,21 @@ public class LevelManager : MonoBehaviour
     /// <summary>停止掉落并清理已生成物品。</summary>
     public void EndLevelGameplay()
     {
-        if (!IsGameplayActive && itemSpawner == null) return;
+        if (!IsGameplayActive && itemSpawner == null
+            && (additionalItemSpawners == null || additionalItemSpawners.Length == 0))
+            return;
 
-        if (itemSpawner != null)
+        ForEachManagedSpawner(s =>
         {
-            itemSpawner.StopSpawning();
-            itemSpawner.ClearAllSpawnedItems();
-        }
+            s.StopSpawning();
+            s.ClearAllSpawnedItems();
+        });
+
+        if (clearGameplayItemsOnEnd)
+            ClearAllGameplayItems();
+
+        _sharedSpawnQuota.Reset();
+        SfxManager.Instance?.ResetDangerousGoodsAlarm();
 
         if (IsGameplayActive)
         {
@@ -186,6 +205,55 @@ public class LevelManager : MonoBehaviour
         return LoadLevel(next);
     }
 
+    /// <summary>
+    /// 当前关卡是否已经达成"场上零物品 + 不会再生成新物品"的清场状态。
+    /// 用于早结束流程（例如玩家走到床前按 E）。需要 IsGameplayActive 为 true。
+    /// </summary>
+    public bool IsAllItemsProcessed()
+    {
+        if (!IsGameplayActive) return false;
+
+        int active = 0;
+        bool hasMoreToSpawn = false;
+
+        if (shareSpawnQuotaAcrossSpawners)
+        {
+            active = _sharedSpawnQuota.CurrentActive;
+            hasMoreToSpawn = _sharedSpawnQuota.maxTotalItems > 0
+                ? _sharedSpawnQuota.HasTotalQuota()
+                : AnyManagedSpawnerStillSpawning();
+        }
+        else
+        {
+            ForEachManagedSpawner(s =>
+            {
+                active += s.GetActiveItemCount();
+                if (s.maxTotalItems > 0)
+                {
+                    if (s.GetRemainingTotalSpawnQuota() > 0)
+                        hasMoreToSpawn = true;
+                }
+                else if (s.IsSpawningActive)
+                {
+                    hasMoreToSpawn = true;
+                }
+            });
+        }
+
+        return active == 0 && !hasMoreToSpawn;
+    }
+
+    bool AnyManagedSpawnerStillSpawning()
+    {
+        bool running = false;
+        ForEachManagedSpawner(s =>
+        {
+            if (s != null && s.IsSpawningActive)
+                running = true;
+        });
+        return running;
+    }
+
     public void ReloadCurrentLevel()
     {
         if (CurrentLevelIndex >= 0)
@@ -194,12 +262,68 @@ public class LevelManager : MonoBehaviour
 
     void ClearRuntimeContent()
     {
-        if (itemSpawner != null)
-            itemSpawner.ClearAllSpawnedItems();
+        ForEachManagedSpawner(s => s.ClearAllSpawnedItems());
+
+        if (clearGameplayItemsOnEnd)
+            ClearAllGameplayItems();
 
         ClearPropsRoot();
         ClearSpawnedAisles();
         SetSceneBakedAislesActive(true);
+    }
+
+    /// <summary>
+    /// 销毁场上所有分拣物品（含 Spawner 未跟踪的切割碎片、遗留物等）。
+    /// 不会移除螺丝刀、工作台等无 ItemInformation 的场景设施。
+    /// </summary>
+    public void ClearAllGameplayItems()
+    {
+        if (InspectionView.Instance != null)
+            InspectionView.Instance.EndInspection(null);
+
+        CharacterInteraction character = FindObjectOfType<CharacterInteraction>();
+
+        WorkTable[] tables = FindObjectsOfType<WorkTable>();
+        for (int i = 0; i < tables.Length; i++)
+        {
+            if (tables[i] != null)
+                tables[i].ClearForLevelEnd();
+        }
+
+        ItemInformation[] items = FindObjectsOfType<ItemInformation>();
+        var roots = new HashSet<GameObject>();
+        for (int i = 0; i < items.Length; i++)
+        {
+            ItemInformation info = items[i];
+            if (info == null) continue;
+
+            GameObject root = GetGameplayItemRoot(info);
+            if (root != null)
+                roots.Add(root);
+        }
+
+        foreach (GameObject root in roots)
+        {
+            if (root == null) continue;
+            character?.ForceReleaseIfHolding(root);
+            Destroy(root);
+        }
+    }
+
+    static GameObject GetGameplayItemRoot(ItemInformation info)
+    {
+        if (info == null) return null;
+
+        InspectableItem insp = info.GetComponentInParent<InspectableItem>();
+        if (insp != null)
+        {
+            Rigidbody iRb = insp.GetComponent<Rigidbody>();
+            if (iRb == null) iRb = insp.GetComponentInParent<Rigidbody>();
+            return iRb != null ? iRb.gameObject : insp.gameObject;
+        }
+
+        Rigidbody rb = info.GetComponentInParent<Rigidbody>();
+        return rb != null ? rb.gameObject : info.gameObject;
     }
 
     void ClearPropsRoot()
@@ -219,11 +343,37 @@ public class LevelManager : MonoBehaviour
 
     void ApplyDefinition(LevelDefinition def)
     {
-        if (itemSpawner != null)
-            itemSpawner.ApplyLevelSettings(def);
+        if (shareSpawnQuotaAcrossSpawners)
+        {
+            _sharedSpawnQuota.Configure(def.maxActiveItems, def.maxTotalItems);
+            _sharedSpawnQuota.Reset();
+        }
+
+        ForEachManagedSpawner(s =>
+        {
+            s.ApplyLevelSettings(def);
+            s.SetSharedQuota(shareSpawnQuotaAcrossSpawners ? _sharedSpawnQuota : null);
+        });
 
         SpawnSceneProps(def);
         ApplyLevelAisles(def);
+    }
+
+    void ForEachManagedSpawner(System.Action<ItemSpawner> action)
+    {
+        if (action == null) return;
+
+        if (itemSpawner != null)
+            action(itemSpawner);
+
+        if (additionalItemSpawners == null) return;
+
+        for (int i = 0; i < additionalItemSpawners.Length; i++)
+        {
+            ItemSpawner extra = additionalItemSpawners[i];
+            if (extra == null || extra == itemSpawner) continue;
+            action(extra);
+        }
     }
 
     void SpawnSceneProps(LevelDefinition def)
