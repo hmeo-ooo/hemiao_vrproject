@@ -65,6 +65,8 @@ public class LevelManager : MonoBehaviour
     AisleDetection[] sceneBakedAisles;
     readonly List<GameObject> spawnedAisles = new List<GameObject>();
 
+    TrashHeap[] sceneTrashHeaps;
+
     public int ResolveLevelIndex(int preferredIndex)
     {
         if (levels == null || levels.Length == 0)
@@ -110,6 +112,7 @@ public class LevelManager : MonoBehaviour
             itemSpawner = FindObjectOfType<ItemSpawner>();
 
         CacheSceneBakedAisles();
+        CacheSceneTrashHeaps();
 
         if (loadLevelOnStart && levels != null && levels.Length > 0)
         {
@@ -167,6 +170,9 @@ public class LevelManager : MonoBehaviour
 
         ForEachManagedSpawner(s => s.StartSpawning());
 
+        // 垃圾堆在关卡正式开始时再填充：hub 准备阶段堆为空，避免被 EndLevelGameplay 的清场逻辑清掉。
+        ApplyTrashHeapOverrides(CurrentLevel);
+
         IsGameplayActive = true;
         LevelGameplayStarted?.Invoke();
     }
@@ -183,6 +189,8 @@ public class LevelManager : MonoBehaviour
             s.StopSpawning();
             s.ClearAllSpawnedItems();
         });
+
+        ClearAllTrashHeaps();
 
         if (clearGameplayItemsOnEnd)
             ClearAllGameplayItems();
@@ -206,52 +214,47 @@ public class LevelManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 当前关卡是否已经达成"场上零物品 + 不会再生成新物品"的清场状态。
+    /// 当前关卡是否已经达成「场上无待处理垃圾 + 垃圾堆不会再补充新垃圾」的清场状态。
     /// 用于早结束流程（例如玩家走到床前按 E）。需要 IsGameplayActive 为 true。
     /// </summary>
     public bool IsAllItemsProcessed()
     {
         if (!IsGameplayActive) return false;
 
-        int active = 0;
-        bool hasMoreToSpawn = false;
-
-        if (shareSpawnQuotaAcrossSpawners)
-        {
-            active = _sharedSpawnQuota.CurrentActive;
-            hasMoreToSpawn = _sharedSpawnQuota.maxTotalItems > 0
-                ? _sharedSpawnQuota.HasTotalQuota()
-                : AnyManagedSpawnerStillSpawning();
-        }
-        else
-        {
-            ForEachManagedSpawner(s =>
-            {
-                active += s.GetActiveItemCount();
-                if (s.maxTotalItems > 0)
-                {
-                    if (s.GetRemainingTotalSpawnQuota() > 0)
-                        hasMoreToSpawn = true;
-                }
-                else if (s.IsSpawningActive)
-                {
-                    hasMoreToSpawn = true;
-                }
-            });
-        }
-
-        return active == 0 && !hasMoreToSpawn;
+        return CountGameplayGarbageInScene() == 0 && !AnyTrashHeapCanSpawnMore();
     }
 
-    bool AnyManagedSpawnerStillSpawning()
+    /// <summary>统计场上仍待分拣处理的垃圾根物体数量（含堆上、手中、传送带等）。</summary>
+    public int CountGameplayGarbageInScene()
     {
-        bool running = false;
-        ForEachManagedSpawner(s =>
+        ItemInformation[] items = FindObjectsOfType<ItemInformation>();
+        var roots = new HashSet<GameObject>();
+        for (int i = 0; i < items.Length; i++)
         {
-            if (s != null && s.IsSpawningActive)
-                running = true;
-        });
-        return running;
+            ItemInformation info = items[i];
+            if (info == null) continue;
+
+            GameObject root = GetGameplayItemRoot(info);
+            if (root != null)
+                roots.Add(root);
+        }
+
+        return roots.Count;
+    }
+
+    bool AnyTrashHeapCanSpawnMore()
+    {
+        if (sceneTrashHeaps == null || sceneTrashHeaps.Length == 0)
+            return false;
+
+        for (int i = 0; i < sceneTrashHeaps.Length; i++)
+        {
+            TrashHeap heap = sceneTrashHeaps[i];
+            if (heap != null && heap.CanSpawnMoreGarbage())
+                return true;
+        }
+
+        return false;
     }
 
     public void ReloadCurrentLevel()
@@ -263,6 +266,8 @@ public class LevelManager : MonoBehaviour
     void ClearRuntimeContent()
     {
         ForEachManagedSpawner(s => s.ClearAllSpawnedItems());
+
+        ClearAllTrashHeaps();
 
         if (clearGameplayItemsOnEnd)
             ClearAllGameplayItems();
@@ -279,7 +284,7 @@ public class LevelManager : MonoBehaviour
     public void ClearAllGameplayItems()
     {
         if (InspectionView.Instance != null)
-            InspectionView.Instance.EndInspection(null);
+            InspectionView.Instance.EndInspection();
 
         CharacterInteraction character = FindObjectOfType<CharacterInteraction>();
 
@@ -357,6 +362,7 @@ public class LevelManager : MonoBehaviour
 
         SpawnSceneProps(def);
         ApplyLevelAisles(def);
+        // 注意：垃圾堆的覆盖 / 生成发生在 BeginLevelGameplay 里，避免被 hub 准备阶段的 EndLevelGameplay 清场逻辑清掉。
     }
 
     void ForEachManagedSpawner(System.Action<ItemSpawner> action)
@@ -577,5 +583,84 @@ public class LevelManager : MonoBehaviour
             if (sceneBakedAisles[i] != null)
                 sceneBakedAisles[i].gameObject.SetActive(active);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 垃圾堆
+    // ------------------------------------------------------------------
+
+    void CacheSceneTrashHeaps()
+    {
+        sceneTrashHeaps = FindObjectsOfType<TrashHeap>(true);
+        if (sceneTrashHeaps == null) return;
+
+        for (int i = 0; i < sceneTrashHeaps.Length; i++)
+        {
+            TrashHeap heap = sceneTrashHeaps[i];
+            if (heap == null) continue;
+            heap.SetLevelManaged(true);
+        }
+    }
+
+    void ClearAllTrashHeaps()
+    {
+        if (sceneTrashHeaps == null || sceneTrashHeaps.Length == 0) return;
+
+        for (int i = 0; i < sceneTrashHeaps.Length; i++)
+        {
+            TrashHeap heap = sceneTrashHeaps[i];
+            if (heap == null) continue;
+            heap.ClearAll();
+        }
+    }
+
+    void ApplyTrashHeapOverrides(LevelDefinition def)
+    {
+        if (sceneTrashHeaps == null || sceneTrashHeaps.Length == 0)
+            return;
+
+        var matched = new HashSet<TrashHeap>();
+
+        if (def != null && def.trashHeapOverrides != null)
+        {
+            for (int i = 0; i < def.trashHeapOverrides.Length; i++)
+            {
+                LevelTrashHeapOverride ov = def.trashHeapOverrides[i];
+                if (ov == null || string.IsNullOrEmpty(ov.heapId)) continue;
+
+                TrashHeap target = FindTrashHeapById(ov.heapId);
+                if (target == null)
+                {
+                    Debug.LogWarning(
+                        $"[LevelManager] 找不到 TrashHeap (heapId='{ov.heapId}')，已跳过覆盖。" +
+                        $"请检查场景里 TrashHeap.heapId 是否一致。", this);
+                    continue;
+                }
+
+                target.ApplyOverride(ov, def.complexityComposition);
+                matched.Add(target);
+            }
+        }
+
+        // 关卡未覆盖到的堆：绑定关卡复杂度构成，再按场景 entries / count 重新填一遍。
+        for (int i = 0; i < sceneTrashHeaps.Length; i++)
+        {
+            TrashHeap heap = sceneTrashHeaps[i];
+            if (heap == null || matched.Contains(heap)) continue;
+            heap.ApplyOverride(null, def != null ? def.complexityComposition : null);
+        }
+    }
+
+    TrashHeap FindTrashHeapById(string heapId)
+    {
+        if (sceneTrashHeaps == null || string.IsNullOrEmpty(heapId)) return null;
+
+        for (int i = 0; i < sceneTrashHeaps.Length; i++)
+        {
+            TrashHeap heap = sceneTrashHeaps[i];
+            if (heap == null) continue;
+            if (heap.heapId == heapId) return heap;
+        }
+        return null;
     }
 }

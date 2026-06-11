@@ -45,9 +45,8 @@ public class ItemSpawner : MonoBehaviour
     [Tooltip("达到关卡生成上限后是否自动停止生成协程")]
     public bool stopSpawningWhenTotalLimitReached = true;
 
-    [Header("复杂度构成（关卡可覆盖）")]
-    [Tooltip("当任意权重 > 0 时按权重抽取；全部为 0 则从 itemPrefabs 中均匀随机。")]
-    public LevelComplexityComposition complexityComposition = new LevelComplexityComposition();
+    LevelComplexityComposition _levelComposition = new LevelComplexityComposition();
+    readonly ComplexitySpawnPicker _spawnPicker = new ComplexitySpawnPicker();
 
     private readonly HashSet<GameObject> _activeItems = new HashSet<GameObject>();
     private int _totalSpawnedCount;
@@ -61,11 +60,6 @@ public class ItemSpawner : MonoBehaviour
     }
 
     public SpawnQuotaGroup SharedQuota => _sharedQuota;
-
-    private readonly List<GameObject> _bucketBasic = new List<GameObject>();
-    private readonly List<GameObject> _bucketComposite = new List<GameObject>();
-    private readonly List<GameObject> _bucketDangerous = new List<GameObject>();
-    private bool _bucketsDirty = true;
 
     private Coroutine _spawnRoutine;
 
@@ -108,10 +102,38 @@ public class ItemSpawner : MonoBehaviour
     public void StartSpawning()
     {
         if (_spawnRoutine != null) return;
+
+        EnsureActiveInHierarchy();
+        if (!isActiveAndEnabled)
+        {
+            Debug.LogWarning(
+                $"[{nameof(ItemSpawner)}] StartSpawning skipped because {name} is inactive in hierarchy.",
+                this);
+            return;
+        }
+
         _spawnRoutine = StartCoroutine(SpawnLoop());
         Debug.Log($"[ItemSpawner] StartSpawning: prefabs={itemPrefabs?.Length ?? 0}, " +
                   $"interval={spawnInterval}, burst={itemsPerBurst}, " +
                   $"maxActive={maxActiveItems}, maxTotal={maxTotalItems}", this);
+    }
+
+    /// <summary>
+    /// 若本物体因父节点未激活而不可用，则自根向下激活整条未激活链（常见于关卡开始前 Spawner 根节点被禁用）。
+    /// </summary>
+    void EnsureActiveInHierarchy()
+    {
+        if (gameObject.activeInHierarchy) return;
+
+        var inactiveChain = new List<Transform>();
+        for (Transform t = transform; t != null; t = t.parent)
+        {
+            if (!t.gameObject.activeSelf)
+                inactiveChain.Add(t);
+        }
+
+        for (int i = inactiveChain.Count - 1; i >= 0; i--)
+            inactiveChain[i].gameObject.SetActive(true);
     }
 
     [ContextMenu("Force Spawn Burst (Debug)")]
@@ -225,74 +247,19 @@ public class ItemSpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// 按复杂度权重抽取一个 prefab；权重全 0 时退化为均匀随机。
-    /// 抽到的复杂度若对应桶为空，会跳到下一个有效复杂度，最后再退化为全池随机。
+    /// 按关卡复杂度概率抽取一个 prefab；概率全 0 时退化为均匀随机。
     /// </summary>
     GameObject PickPrefab()
     {
         if (itemPrefabs == null || itemPrefabs.Length == 0) return null;
-
-        EnsureBuckets();
-
-        float total = complexityComposition != null ? complexityComposition.TotalWeight : 0f;
-        if (total <= 0f)
-            return itemPrefabs[Random.Range(0, itemPrefabs.Length)];
-
-        for (int attempt = 0; attempt < 3; attempt++)
-        {
-            float roll = Random.value * total;
-            ItemInformation.ItemComplexity pick;
-
-            float acc = complexityComposition.basicWeight;
-            if (roll < acc) pick = ItemInformation.ItemComplexity.Basic;
-            else if (roll < (acc += complexityComposition.compositeWeight)) pick = ItemInformation.ItemComplexity.Composite;
-            else pick = ItemInformation.ItemComplexity.Dangerous;
-
-            var bucket = GetBucket(pick);
-            if (bucket.Count > 0)
-                return bucket[Random.Range(0, bucket.Count)];
-
-            // 该桶为空，把它的权重剔除后再抽一次
-            total -= complexityComposition.GetWeight(pick);
-            if (total <= 0f) break;
-        }
-
-        return itemPrefabs[Random.Range(0, itemPrefabs.Length)];
+        return _spawnPicker.PickPrefab(_levelComposition);
     }
 
-    List<GameObject> GetBucket(ItemInformation.ItemComplexity c)
+    void ConfigureSpawnPicker()
     {
-        switch (c)
-        {
-            case ItemInformation.ItemComplexity.Basic: return _bucketBasic;
-            case ItemInformation.ItemComplexity.Composite: return _bucketComposite;
-            case ItemInformation.ItemComplexity.Dangerous: return _bucketDangerous;
-            default: return _bucketBasic;
-        }
+        int count = itemPrefabs != null ? itemPrefabs.Length : 0;
+        _spawnPicker.Configure(i => itemPrefabs[i], count);
     }
-
-    void EnsureBuckets()
-    {
-        if (!_bucketsDirty) return;
-        _bucketsDirty = false;
-        _bucketBasic.Clear();
-        _bucketComposite.Clear();
-        _bucketDangerous.Clear();
-        if (itemPrefabs == null) return;
-
-        for (int i = 0; i < itemPrefabs.Length; i++)
-        {
-            GameObject prefab = itemPrefabs[i];
-            if (prefab == null) continue;
-            ItemInformation info = prefab.GetComponent<ItemInformation>();
-            ItemInformation.ItemComplexity complexity = info != null
-                ? info.complexity
-                : ItemInformation.ItemComplexity.Basic;
-            GetBucket(complexity).Add(prefab);
-        }
-    }
-
-    void InvalidateBuckets() { _bucketsDirty = true; }
 
     /// <summary>
     /// 从预制体复制 ItemInformation；若实例上没有则自动添加。
@@ -315,8 +282,6 @@ public class ItemSpawner : MonoBehaviour
         info.creditsOnCorrectThrow = source.creditsOnCorrectThrow;
         info.itemDisplayName = source.itemDisplayName;
         info.itemDescription = source.itemDescription;
-        info.overrideOutlineColor = source.overrideOutlineColor;
-        info.outlineColor = source.outlineColor;
     }
 
     /// <summary>
@@ -327,10 +292,6 @@ public class ItemSpawner : MonoBehaviour
         if (instance == null) return;
 
         EnsurePhysics(instance);
-
-        var info = instance.GetComponent<ItemInformation>();
-        if (info != null)
-            info.overrideOutlineColor = false;
     }
 
     /// <summary>
@@ -469,8 +430,8 @@ public class ItemSpawner : MonoBehaviour
         maxTotalItems = Mathf.Max(0, level.maxTotalItems);
         autoStart = level.autoStartSpawning;
 
-        complexityComposition = level.complexityComposition ?? new LevelComplexityComposition();
-        InvalidateBuckets();
+        _levelComposition = level.complexityComposition ?? new LevelComplexityComposition();
+        ConfigureSpawnPicker();
 
         ResetTotalSpawnedCount();
     }

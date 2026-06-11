@@ -1,31 +1,91 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
-/// 每关复杂度构成。权重越大该类物品越易被抽到；全部为 0 时退化为随机抽取。
+/// 每关复杂度构成。以百分比表示 Basic / Composite / Dangerous 的生成概率。
+/// 建议三项之和为 100；若合计不为 100，运行时按各项占合计的比例归一化抽取。
+/// 全部为 0 时退化为在候选池中均匀随机。
 /// </summary>
 [System.Serializable]
 public class LevelComplexityComposition
 {
-    [Tooltip("基础物（Basic）权重。")]
-    [Min(0f)] public float basicWeight = 1f;
+    [Tooltip("基础物（Basic）生成概率（%）。")]
+    [Range(0f, 100f)]
+    [FormerlySerializedAs("basicWeight")]
+    public float basicProbability = 100f;
 
-    [Tooltip("复合物（Composite）权重。")]
-    [Min(0f)] public float compositeWeight = 0f;
+    [Tooltip("复合物（Composite）生成概率（%）。")]
+    [Range(0f, 100f)]
+    [FormerlySerializedAs("compositeWeight")]
+    public float compositeProbability = 0f;
 
-    [Tooltip("高危品（Dangerous）权重。")]
-    [Min(0f)] public float dangerousWeight = 0f;
+    [Tooltip("高危品（Dangerous）生成概率（%）。")]
+    [Range(0f, 100f)]
+    [FormerlySerializedAs("dangerousWeight")]
+    public float dangerousProbability = 0f;
 
-    public float TotalWeight => basicWeight + compositeWeight + dangerousWeight;
+    /// <summary>三项概率之和（Inspector 填写的原始值，未归一化）。</summary>
+    public float TotalProbability => basicProbability + compositeProbability + dangerousProbability;
 
-    public float GetWeight(ItemInformation.ItemComplexity c)
+    public bool HasAnyProbability => TotalProbability > 0f;
+
+    public float GetProbability(ItemInformation.ItemComplexity complexity)
     {
-        switch (c)
+        switch (complexity)
         {
-            case ItemInformation.ItemComplexity.Basic: return basicWeight;
-            case ItemInformation.ItemComplexity.Composite: return compositeWeight;
-            case ItemInformation.ItemComplexity.Dangerous: return dangerousWeight;
+            case ItemInformation.ItemComplexity.Basic: return basicProbability;
+            case ItemInformation.ItemComplexity.Composite: return compositeProbability;
+            case ItemInformation.ItemComplexity.Dangerous: return dangerousProbability;
             default: return 0f;
         }
+    }
+
+    /// <summary>
+    /// 在「仅有可用桶」的前提下按概率抽取复杂度。
+    /// <paramref name="isBucketAvailable"/> 返回 false 的复杂度不参与本次 roll（例如对应 prefab 桶为空）。
+    /// </summary>
+    public bool TryPickComplexity(
+        System.Func<ItemInformation.ItemComplexity, bool> isBucketAvailable,
+        out ItemInformation.ItemComplexity pick)
+    {
+        pick = ItemInformation.ItemComplexity.Basic;
+
+        float total = 0f;
+        if (isBucketAvailable(ItemInformation.ItemComplexity.Basic))
+            total += basicProbability;
+        if (isBucketAvailable(ItemInformation.ItemComplexity.Composite))
+            total += compositeProbability;
+        if (isBucketAvailable(ItemInformation.ItemComplexity.Dangerous))
+            total += dangerousProbability;
+
+        if (total <= 0f)
+            return false;
+
+        float roll = Random.value * total;
+        float acc = 0f;
+
+        if (isBucketAvailable(ItemInformation.ItemComplexity.Basic))
+        {
+            acc += basicProbability;
+            if (roll < acc)
+            {
+                pick = ItemInformation.ItemComplexity.Basic;
+                return true;
+            }
+        }
+
+        if (isBucketAvailable(ItemInformation.ItemComplexity.Composite))
+        {
+            acc += compositeProbability;
+            if (roll < acc)
+            {
+                pick = ItemInformation.ItemComplexity.Composite;
+                return true;
+            }
+        }
+
+        pick = ItemInformation.ItemComplexity.Dangerous;
+        return true;
     }
 }
 
@@ -47,13 +107,14 @@ public class LevelDefinition : ScriptableObject
     [Min(1f)]
     public float levelDurationSeconds = 120f;
 
+    [Header("物品生成")]
+    [Tooltip("本关掉落（ItemSpawner）与垃圾堆（TrashHeap）共用的 Basic/Composite/Dangerous 生成概率（%）。建议三项之和为 100。" +
+             "若某概率对应的预制体不在候选列表里，该档会被跳过并在剩余档位间重新归一化。")]
+    public LevelComplexityComposition complexityComposition = new LevelComplexityComposition();
+
     [Header("掉落生成（ItemSpawner）")]
     [Tooltip("本关候选掉落物预制体（应包含 ItemInformation 组件）。")]
     public GameObject[] spawnPrefabs;
-
-    [Header("复杂度构成")]
-    [Tooltip("按 Basic/Composite/Dangerous 权重从 spawnPrefabs 中抽取。若某权重对应的预制体不在列表里，会跳过该权重。")]
-    public LevelComplexityComposition complexityComposition = new LevelComplexityComposition();
 
     public float spawnInterval = 1f;
 
@@ -81,6 +142,11 @@ public class LevelDefinition : ScriptableObject
     [Header("分拣通道")]
     [Tooltip("本关启用的分拣通道列表。展开每条后可从场景拖入物体，自动写入 localPosition / localEulerAngles。")]
     public LevelAislePlacement[] aisles;
+
+    [Header("场上垃圾堆")]
+    [Tooltip("本关对场景里 TrashHeap 的配置（按 heapId 匹配）。关卡开始时写入 entries / 数量 / 再生等字段，覆盖场景默认值。" +
+             "生成概率统一使用上方 complexityComposition。")]
+    public LevelTrashHeapOverride[] trashHeapOverrides;
 
     [Header("关卡干扰")]
     [Tooltip("本关在指定时间触发的干扰列表（如电视雪花叠加层）。每条由 LevelSessionController 按 triggerAtSeconds 排程。")]

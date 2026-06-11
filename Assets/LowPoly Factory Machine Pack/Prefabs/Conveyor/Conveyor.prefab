@@ -172,9 +172,9 @@ MonoBehaviour:
   maxTotalItems: 0
   stopSpawningWhenTotalLimitReached: 1
   complexityComposition:
-    basicWeight: 1
-    compositeWeight: 0
-    dangerousWeight: 0
+    basicProbability: 100
+    compositeProbability: 0
+    dangerousProbability: 0
 --- !u!1 &3304620590693103176
 GameObject:
   m_ObjectHideFlags: 0

@@ -81,6 +81,16 @@ public class AisleDetection : MonoBehaviour
         if (debugLogging)
             Debug.Log($"[AisleDetection] hit {info.gameObject.name} category={info.category} aisle={aisleCategory} speed={speed:F2}");
 
+        if (info.category == ItemInformation.ItemCategory.Prop)
+        {
+            if (debugLogging)
+                Debug.Log($"[AisleDetection] {info.gameObject.name} is a Prop, destroyed without rewards or penalty.");
+
+            Destroy(info.gameObject);
+            processedInstanceIds.Add(id);
+            return;
+        }
+
         if (info.category == aisleCategory)
         {
             int baseCredits = info.creditsOnCorrectThrow;

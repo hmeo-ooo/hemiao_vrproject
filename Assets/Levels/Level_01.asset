@@ -20,9 +20,9 @@ MonoBehaviour:
   - {fileID: 1742078769820402944, guid: ba702c496b69f824885007ee597b534f, type: 3}
   - {fileID: 2901559934276544025, guid: 30042e6265dd1e64d9b9c9677e3fe5ae, type: 3}
   complexityComposition:
-    basicWeight: 10
-    compositeWeight: 0
-    dangerousWeight: 0
+    basicProbability: 100
+    compositeProbability: 0
+    dangerousProbability: 0
   spawnInterval: 3
   itemsPerBurst: 1
   spawnSpreadRadius: 0.3

@@ -26,7 +26,20 @@ public class LevelSessionController : MonoBehaviour
     [Tooltip("倒计时结束后是否自动准备下一关（无下一关则重载当前关）。")]
     public bool advanceLevelAfterRound = true;
 
+    [Tooltip("回合结束（含早退、倒计时结束）后，是否把玩家瞬移回 playerSpawnPoint。")]
+    public bool resetPlayerOnRoundEnd = true;
+
+    [Tooltip("玩家根节点（带 CharacterMove）。留空则在 Start 时自动查找 CharacterInteraction 所在物体。")]
+    public Transform playerTransform;
+
+    [Tooltip("回合结束后玩家被瞬移到该 Transform 的 position/rotation。\n" +
+             "留空则在 Start 时自动用玩家初始位置作为出生点。")]
+    public Transform playerSpawnPoint;
+
     bool _roundActive;
+    Vector3 _autoSpawnPosition;
+    Quaternion _autoSpawnRotation = Quaternion.identity;
+    bool _autoSpawnCaptured;
     Canvas _gameplayHudCanvas;
     Vector3 _gameplayHudCanvasScale = Vector3.one;
 
@@ -51,6 +64,8 @@ public class LevelSessionController : MonoBehaviour
     void Start()
     {
         CacheGameplayHudCanvas();
+        ResolvePlayerTransform();
+        CapturePlayerSpawnPose();
 
         if (levelHubUI != null)
             levelHubUI.Bind(this);
@@ -226,10 +241,19 @@ public class LevelSessionController : MonoBehaviour
     {
         _roundActive = false;
         StopAllInterferences();
-        levelManager?.EndLevelGameplay();
+
+        // 关卡结束：强制清空场上所有垃圾/碎片/可拾取物，避免遗留到下一关。
+        if (levelManager != null)
+        {
+            levelManager.EndLevelGameplay();
+            levelManager.ClearAllGameplayItems();
+        }
 
         if (countDownTimer != null)
             countDownTimer.StopTimer();
+
+        if (resetPlayerOnRoundEnd)
+            ResetPlayerToSpawn();
 
         int nextIndex = levelManager != null ? levelManager.CurrentLevelIndex : 0;
         if (tryAdvanceLevel && levelManager != null)
@@ -242,8 +266,70 @@ public class LevelSessionController : MonoBehaviour
         PrepareLevelAndShowHub(nextIndex);
     }
 
+    // ------------------------------------------------------------------
+    // 玩家出生点
+    // ------------------------------------------------------------------
+
+    void ResolvePlayerTransform()
+    {
+        if (playerTransform != null) return;
+
+        CharacterInteraction character = FindObjectOfType<CharacterInteraction>();
+        if (character != null)
+            playerTransform = character.transform;
+    }
+
+    void CapturePlayerSpawnPose()
+    {
+        if (playerTransform == null) return;
+        if (playerSpawnPoint != null) return;
+
+        _autoSpawnPosition = playerTransform.position;
+        _autoSpawnRotation = playerTransform.rotation;
+        _autoSpawnCaptured = true;
+    }
+
+    /// <summary>把玩家瞬移回 playerSpawnPoint（优先）或开局自动捕获的初始姿态，并清零物理速度。</summary>
+    public void ResetPlayerToSpawn()
+    {
+        if (playerTransform == null)
+            ResolvePlayerTransform();
+        if (playerTransform == null) return;
+
+        Vector3 pos;
+        Quaternion rot;
+        if (playerSpawnPoint != null)
+        {
+            pos = playerSpawnPoint.position;
+            rot = playerSpawnPoint.rotation;
+        }
+        else if (_autoSpawnCaptured)
+        {
+            pos = _autoSpawnPosition;
+            rot = _autoSpawnRotation;
+        }
+        else
+        {
+            return;
+        }
+
+        // 玩家手里的物品已在 ClearAllGameplayItems 内被释放+销毁，这里无需再处理。
+        Rigidbody rb = playerTransform.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.position = pos;
+            rb.rotation = rot;
+        }
+
+        playerTransform.SetPositionAndRotation(pos, rot);
+
+        Physics.SyncTransforms();
+    }
+
     /// <summary>
-    /// 场上物品全部处理完毕后，玩家通过 bed 等交互点提前结束本关。
+    /// 场上垃圾全部处理完毕、垃圾堆不再补充后，玩家通过 bed 等交互点提前结束本关。
     /// </summary>
     public void EndRoundEarly()
     {

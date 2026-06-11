@@ -56,7 +56,8 @@ public class CharacterInteraction : MonoBehaviour
     [Tooltip("\u63CF\u8FB9\u5BBD\u5EA6\uFF08\u5C4F\u5E55\u7A7A\u95F4\uFF09\u3002")]
     public float outlineWidth = 0.02f;
 
-    [Tooltip("\u65E0 ItemInformation \u7684\u53EF\u4EA4\u4E92\u7269\u4F53\u4F7F\u7528\u7684\u63CF\u8FB9\u989C\u8272\u3002")]
+    [Tooltip("挂有 ItemInformation 的物品使用的描边颜色（全场常亮，与距离无关）。" +
+             "无 ItemInformation 的可交互物体（如螺丝刀、刀）在 maxGrabDistance 内也使用此颜色。")]
     public Color defaultOutlineColor = Color.white;
 
     [Tooltip("玩家抓住物品时的描边颜色。")]
@@ -93,7 +94,6 @@ public class CharacterInteraction : MonoBehaviour
 
     readonly List<GameObject> activeOutlines = new List<GameObject>();
     readonly HashSet<GameObject> outlinedRoots = new HashSet<GameObject>();
-    readonly Dictionary<GameObject, Color> outlineColorOverrides = new Dictionary<GameObject, Color>();
     GameObject heldOutlineRoot;
 
     ItemInfoWorldUI itemInfoUI;
@@ -244,21 +244,14 @@ public class CharacterInteraction : MonoBehaviour
     void RefreshInteractionVisuals()
     {
         HashSet<GameObject> wantOutline = new HashSet<GameObject>();
-        outlineColorOverrides.Clear();
 
-        var itemsInRange = CollectItemRootsInRange();
+        var itemsInRange = CollectOutlineTargets();
         for (int i = 0; i < itemsInRange.Count; i++)
         {
             GameObject item = itemsInRange[i];
             if (item == null || item == aimedObject || item == grabbedObject) continue;
             wantOutline.Add(item);
-
-            ItemInformation info = item.GetComponent<ItemInformation>();
-            if (info != null && info.overrideOutlineColor)
-                outlineColorOverrides[item] = info.outlineColor;
         }
-
-        CollectDetachablePartsInRange(wantOutline, outlineColorOverrides);
 
         var toRemove = new List<GameObject>();
         foreach (GameObject root in outlinedRoots)
@@ -270,18 +263,7 @@ public class CharacterInteraction : MonoBehaviour
             RemoveOutline(toRemove[i]);
 
         foreach (GameObject root in wantOutline)
-        {
-            Color? colorOverride = null;
-            if (outlineColorOverrides.TryGetValue(root, out Color c))
-                colorOverride = c;
-            else
-            {
-                ItemInformation info = root.GetComponent<ItemInformation>();
-                if (info != null && info.overrideOutlineColor)
-                    colorOverride = info.outlineColor;
-            }
-            EnsureOutline(root, colorOverride);
-        }
+            EnsureOutline(root);
 
         UpdateHeldOutline();
 
@@ -303,15 +285,30 @@ public class CharacterInteraction : MonoBehaviour
         }
     }
 
-    List<GameObject> CollectItemRootsInRange()
+    /// <summary>
+    /// 收集需要显示描边的可交互根物体：
+    /// ItemInformation 物品全场常亮；其他工具仍受 maxGrabDistance 限制。
+    /// </summary>
+    List<GameObject> CollectOutlineTargets()
     {
         var results = new List<GameObject>();
-        if (cameraTransform == null) return results;
-
         var seen = new HashSet<int>();
-        float maxDistSqr = maxGrabDistance * maxGrabDistance;
-        Vector3 camPos = cameraTransform.position;
 
+        CollectAllItemInformationRoots(seen, results);
+
+        if (cameraTransform != null)
+        {
+            float maxDistSqr = maxGrabDistance * maxGrabDistance;
+            Vector3 camPos = cameraTransform.position;
+            CollectToolRootsInRange<Screwdriver>(camPos, maxDistSqr, seen, results);
+            CollectToolRootsInRange<Knife>(camPos, maxDistSqr, seen, results);
+        }
+
+        return results;
+    }
+
+    static void CollectAllItemInformationRoots(HashSet<int> seen, List<GameObject> results)
+    {
         ItemInformation[] allItems = FindObjectsOfType<ItemInformation>();
         for (int i = 0; i < allItems.Length; i++)
         {
@@ -321,46 +318,9 @@ public class CharacterInteraction : MonoBehaviour
             GameObject root = GetItemRoot(info);
             if (root == null || !root.activeInHierarchy) continue;
 
-            if ((root.transform.position - camPos).sqrMagnitude > maxDistSqr)
-                continue;
-
             int id = root.GetInstanceID();
             if (!seen.Add(id)) continue;
             results.Add(root);
-        }
-
-        // 工具类物体（例如 Screwdriver / Knife）没有 ItemInformation，也希望参与描边显示。
-        CollectToolRootsInRange<Screwdriver>(camPos, maxDistSqr, seen, results);
-        CollectToolRootsInRange<Knife>(camPos, maxDistSqr, seen, results);
-
-        return results;
-    }
-
-    void CollectDetachablePartsInRange(
-        HashSet<GameObject> wantOutline,
-        Dictionary<GameObject, Color> colorOverrides)
-    {
-        if (cameraTransform == null) return;
-
-        float maxDistSqr = maxGrabDistance * maxGrabDistance;
-        Vector3 camPos = cameraTransform.position;
-
-        InspectableItem[] inspectables = FindObjectsOfType<InspectableItem>();
-        for (int i = 0; i < inspectables.Length; i++)
-        {
-            InspectableItem insp = inspectables[i];
-            if (insp == null || !insp.showDetachableOutline) continue;
-
-            for (int p = 0; p < insp.detachableParts.Count; p++)
-            {
-                Transform part = insp.detachableParts[p];
-                if (part == null || !part.gameObject.activeInHierarchy) continue;
-                if (part.gameObject == aimedObject || part.gameObject == grabbedObject) continue;
-                if ((part.position - camPos).sqrMagnitude > maxDistSqr) continue;
-
-                wantOutline.Add(part.gameObject);
-                colorOverrides[part.gameObject] = insp.detachableOutlineColor;
-            }
         }
     }
 
@@ -635,6 +595,21 @@ public class CharacterInteraction : MonoBehaviour
         ReleaseGrabbedObject(false, Vector3.zero);
     }
 
+    /// <summary>
+    /// 当当前握持的物品需要"被抓取后永久脱离 Kinematic / 锁定状态"时调用（例如 TrashHeap 上嵌入的垃圾）。
+    /// 改写抓取时缓存的物理状态，让 <see cref="ReleaseGrabbedObject"/> 不再把物体还原成 Kinematic。
+    /// 调用方需保证此时确实正握住一个物体，否则本调用无效。
+    /// </summary>
+    public void PromoteHeldItemPermanently()
+    {
+        if (grabbedRb == null) return;
+        grabbedWasKinematic = false;
+        grabbedUseGravity = true;
+        grabbedOriginalConstraints = RigidbodyConstraints.None;
+        grabbedInterpolation = RigidbodyInterpolation.Interpolate;
+        grabbedCollisionDetection = CollisionDetectionMode.ContinuousDynamic;
+    }
+
     void ReleaseGrabbedObject(bool applyThrow, Vector3 throwDirection)
     {
         if (grabbedRb == null)
@@ -895,13 +870,7 @@ public class CharacterInteraction : MonoBehaviour
         return inst;
     }
 
-    Color GetOutlineColor(GameObject target)
-    {
-        var info = target.GetComponentInParent<ItemInformation>();
-        if (info == null) return defaultOutlineColor;
-        if (info.overrideOutlineColor) return info.outlineColor;
-        return GetCategoryOutlineColor(info.category);
-    }
+    Color GetOutlineColor(GameObject target) => defaultOutlineColor;
 
     Color GetCategoryOutlineColor(ItemInformation.ItemCategory category)
     {

@@ -22,13 +22,7 @@ public class ItemInfoWorldUI : MonoBehaviour
     [Tooltip("\u5185\u8FB9\u8DDD\uFF1A\u5DE6\u3001\u53F3\u3001\u4E0A\u3001\u4E0B\uFF08\u50CF\u7D20\uFF09")]
     public Vector4 padding = new Vector4(10f, 10f, 8f, 8f);
 
-    [Tooltip("\u540D\u79F0\u4E0E\u6076\u641E\u4EF7\u503C\u4E4B\u95F4\u7684\u95F4\u8DDD")]
-    public float gapNameToPrank = 1f;
-
-    [Tooltip("\u6076\u641E\u4EF7\u503C\u4E0E\u4ECB\u7ECD\u4E4B\u95F4\u7684\u95F4\u8DDD")]
-    public float gapPrankToDesc = 4f;
-
-    [Tooltip("\u6CA1\u6709\u6076\u641E\u4EF7\u503C\u65F6\uFF0C\u540D\u79F0\u4E0E\u4ECB\u7ECD\u4E4B\u95F4\u7684\u95F4\u8DDD")]
+    [Tooltip("\u540D\u79F0\u4E0E\u4ECB\u7ECD\u4E4B\u95F4\u7684\u95F4\u8DDD")]
     public float gapNameToDesc = 4f;
 
     [Tooltip("\u7070\u8272\u5E95\u8272")]
@@ -40,9 +34,6 @@ public class ItemInfoWorldUI : MonoBehaviour
     [Tooltip("\u540D\u79F0\u5B57\u53F7")]
     public float nameFontSize = 18f;
 
-    [Tooltip("\u6076\u641E\u4EF7\u503C\u6807\u7B7E\u5B57\u53F7")]
-    public float prankValueFontSize = 12f;
-
     [Tooltip("\u4ECB\u7ECD\u5B57\u53F7")]
     public float descriptionFontSize = 13f;
 
@@ -51,7 +42,6 @@ public class ItemInfoWorldUI : MonoBehaviour
     RectTransform viewportRect;
     RectTransform contentRect;
     TMP_Text nameText;
-    TMP_Text prankValueText;
     TMP_Text descriptionText;
     Camera uiCamera;
     Transform followTarget;
@@ -73,32 +63,20 @@ public class ItemInfoWorldUI : MonoBehaviour
         nameText.text = info.ResolvedDisplayName;
         descriptionText.text = info.itemDescription ?? string.Empty;
 
-        bool showPrank = info.HasPrankValueLabel;
-        if (prankValueText != null)
-        {
-            prankValueText.gameObject.SetActive(showPrank);
-            if (showPrank)
-                prankValueText.text = $"<b>{info.prankValueLabel}</b>";
-        }
-
-        LayoutPanel(showPrank);
+        LayoutPanel();
         panelRect.gameObject.SetActive(true);
         UpdatePosition();
     }
 
-    void LayoutPanel(bool showPrank)
+    void LayoutPanel()
     {
         float left = padding.x, right = padding.y, top = padding.z, bottom = padding.w;
         float contentWidth = Mathf.Max(40f, maxPanelWidth - left - right);
 
         float nameH = nameText.GetPreferredValues(nameText.text, contentWidth, 0f).y;
         float descH = descriptionText.GetPreferredValues(descriptionText.text, contentWidth, 0f).y;
-        float prankH = 0f;
-        if (showPrank && prankValueText != null)
-            prankH = prankValueText.GetPreferredValues(prankValueText.text, contentWidth, 0f).y;
 
-        float between = showPrank ? gapNameToPrank + prankH + gapPrankToDesc : gapNameToDesc;
-        float contentH = top + nameH + between + descH + bottom;
+        float contentH = top + nameH + gapNameToDesc + descH + bottom;
 
         contentTotalHeight = contentH;
         float minH = Mathf.Max(0f, minPanelHeight);
@@ -115,18 +93,7 @@ public class ItemInfoWorldUI : MonoBehaviour
 
         float y = -top;
         PlaceText(nameText.rectTransform, left, contentWidth, y, nameH);
-        y -= nameH;
-
-        if (showPrank && prankValueText != null)
-        {
-            y -= gapNameToPrank;
-            PlaceText(prankValueText.rectTransform, left, contentWidth, y, prankH);
-            y -= prankH + gapPrankToDesc;
-        }
-        else
-        {
-            y -= gapNameToDesc;
-        }
+        y -= nameH + gapNameToDesc;
         PlaceText(descriptionText.rectTransform, left, contentWidth, y, descH);
     }
 
@@ -247,9 +214,6 @@ public class ItemInfoWorldUI : MonoBehaviour
 
         nameText = CreateChildTmp(contentGo.transform, "ItemName", nameFontSize, FontStyles.Bold,
             TextAlignmentOptions.TopLeft, wrapping: true, ellipsis: false);
-
-        prankValueText = CreateChildTmp(contentGo.transform, "ItemPrankValue", prankValueFontSize, FontStyles.Normal,
-            TextAlignmentOptions.TopLeft, wrapping: false, ellipsis: true);
 
         descriptionText = CreateChildTmp(contentGo.transform, "ItemDescription", descriptionFontSize, FontStyles.Normal,
             TextAlignmentOptions.TopLeft, wrapping: true, ellipsis: false);

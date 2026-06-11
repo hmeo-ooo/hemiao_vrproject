@@ -26,13 +26,18 @@ public class LevelHubUI : MonoBehaviour
     [Header("文案（LiberationSans 仅支持拉丁字符，中文请指定 Hub Font）")]
     public TMP_FontAsset hubFont;
 
-    public string levelFormat = "Level: {0}";
+    public string levelFormat = "Day {0}";
+
+    [Tooltip("关卡选择面板里每个按钮的文案格式，{0} = LevelDefinition.levelNumber。\n" +
+             "留空时按钮使用 LevelDefinition.displayName。")]
+    public string levelButtonFormat = "Day {0}";
+
     public string creditsFormat = "Credits: {0}";
     public string debtFormat = "Debt: {0:N0}";
     public string enterButtonLabel = "Enter Level";
     public string repayButtonLabel = "Repay Debt";
-    public string selectLevelButtonLabel = "Select Level";
-    public string selectLevelTitle = "Select Level";
+    public string selectLevelButtonLabel = "Select Day";
+    public string selectLevelTitle = "Select Day";
     public string selectLevelBackLabel = "Back";
 
     Canvas _overlayCanvas;
@@ -130,9 +135,7 @@ public class LevelHubUI : MonoBehaviour
         for (int i = 0; i < lm.LevelCount; i++)
         {
             LevelDefinition def = lm.levels[i];
-            string label = def != null
-                ? (!string.IsNullOrEmpty(def.displayName) ? def.displayName : $"Level {def.levelNumber}")
-                : $"(empty {i + 1})";
+            string label = BuildLevelButtonLabel(def, i);
 
             int captured = i;
             Button btn = CreateButton(levelSelectGrid, label);
@@ -237,10 +240,9 @@ public class LevelHubUI : MonoBehaviour
     {
         LevelDefinition def = LevelManager.Instance != null ? LevelManager.Instance.CurrentLevel : null;
         int levelNum = def != null ? def.levelNumber : 1;
-        string levelName = def != null && !string.IsNullOrEmpty(def.displayName) ? def.displayName : $"Level {levelNum}";
 
         if (levelText != null)
-            levelText.text = SafeFormat(levelFormat, levelName);
+            levelText.text = SafeFormat(levelFormat, levelNum);
 
         int credits = CreditManager.Instance != null ? CreditManager.Instance.credits : 0;
         if (creditsText != null)
@@ -255,6 +257,20 @@ public class LevelHubUI : MonoBehaviour
             bool canRepay = debt > 0 && credits > 0 && CreditManager.Instance != null;
             repayDebtButton.interactable = canRepay;
         }
+    }
+
+    string BuildLevelButtonLabel(LevelDefinition def, int slotIndex)
+    {
+        if (def == null)
+            return $"(empty {slotIndex + 1})";
+
+        if (!string.IsNullOrEmpty(levelButtonFormat))
+            return SafeFormat(levelButtonFormat, def.levelNumber);
+
+        if (!string.IsNullOrEmpty(def.displayName))
+            return def.displayName;
+
+        return $"Day {def.levelNumber}";
     }
 
     static string SafeFormat(string format, object value)

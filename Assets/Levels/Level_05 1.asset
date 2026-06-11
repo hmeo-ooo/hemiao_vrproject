@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9ea695347c4a964ba875342efa7da2d, type: 3}
+  m_Name: Level_05 1
+  m_EditorClassIdentifier: 
+  levelNumber: 5
+  displayName: Level 5
+  levelDurationSeconds: 200
+  spawnPrefabs: []
+  complexityComposition:
+    basicProbability: 100
+    compositeProbability: 0
+    dangerousProbability: 0
+  spawnInterval: 2
+  itemsPerBurst: 1
+  spawnSpreadRadius: 0.3
+  burstImpulse: 0
+  burstImpulseRandomness: 0
+  maxActiveItems: 40
+  maxTotalItems: 40
+  autoStartSpawning: 1
+  sceneProps:
+  - prefab: {fileID: 4969296450780851133, guid: aa67904ddd247d241afa5f29fba135f1,
+      type: 3}
+    localPosition: {x: -0.8, y: 0.8, z: 1.6}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+  aisles:
+  - category: 1
+    label: 
+    prefab: {fileID: 7983567825950029453, guid: 70338ac1f005129429c6d37ec2ed77b5,
+      type: 3}
+    localPosition: {x: -1.26, y: 3, z: 13.641678}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 2
+    label: 
+    prefab: {fileID: 3237057129092650422, guid: 638ef916b1ac5904096b35725dd671d8,
+      type: 3}
+    localPosition: {x: 3.6, y: 3, z: 13.641678}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 0
+    label: 
+    prefab: {fileID: 6311291743662715886, guid: 5b9f7a5ecdfa1944098bc1ccb82338ed,
+      type: 3}
+    localPosition: {x: -5.8, y: 3, z: 13.5}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  trashHeapOverrides:
+  - heapId: 
+    label: 
+    entries:
+    - prefab: {fileID: 26042307918521241, guid: 94a92b7abc64bc3489927de1cc85257b,
+        type: 3}
+      weight: 1
+    - prefab: {fileID: 2901559934276544025, guid: 30042e6265dd1e64d9b9c9677e3fe5ae,
+        type: 3}
+      weight: 1
+    - prefab: {fileID: 1742078769820402944, guid: ba702c496b69f824885007ee597b534f,
+        type: 3}
+      weight: 1
+    initialTrashCount: 20
+    allowDuplicates: 0
+    respawnEnabled: 0
+    respawnInterval: 5
+    respawnPerBurst: 1
+    respawnTargetActiveCount: 0
+    maxTotalSpawned: 0
+  interferences: []
+  designNotes: 
+  showTutorialBeforeLevel: 1
+  tutorialTitle: Day  5
+  tutorialBody: enjoy

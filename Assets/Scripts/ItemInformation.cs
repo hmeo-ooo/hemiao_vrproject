@@ -7,11 +7,16 @@ public class ItemInformation : MonoBehaviour
         Metal,
         OrganicMatter,
         CoreEnergy,
-        DangerousGoods
+        DangerousGoods,
+        /// <summary>
+        /// 道具类。投入任意分拣通道仅销毁、无奖惩；每个具体道具的实际效果由挂在物品上的
+        /// PropPickupEffect 子类（如 CoinPickupEffect）实现，通常在被玩家抓取时触发。
+        /// </summary>
+        Prop,
     }
 
     /// <summary>
-    /// 物品复杂度，用于关卡按权重抽取掉落物。
+    /// 物品复杂度，用于关卡按概率抽取掉落物。
     /// Basic：基础单体物（金属/有机/核心能源单件等）。
     /// Composite：复合物（如可拆解/可切割的多部件物）。
     /// Dangerous：高危品（危险品，错误处理风险更高）。
@@ -41,20 +46,8 @@ public class ItemInformation : MonoBehaviour
     [TextArea(2, 6)]
     public string itemDescription;
 
-    [Header("\u6076\u641E\u4EF7\u503C")]
-    [Tooltip("\u6076\u641E\u4EF7\u503C\u6807\u7B7E\u6587\u672C\uFF08\u53EF\u81EA\u7531\u586B\u5199\uFF0C\u7559\u7A7A\u5219\u4E0D\u663E\u793A\uFF09")]
-    public string prankValueLabel;
-
-    [Header("\u63CF\u8FB9\uFF08\u53EF\u9009\uFF09")]
-    [Tooltip("\u52FE\u9009\u540E\u4F7F\u7528\u4E0B\u65B9\u989C\u8272\uFF0C\u8986\u76D6 CharacterInteraction \u4E2D\u7684\u7C7B\u522B\u9ED8\u8BA4\u63CF\u8FB9\u8272")]
-    public bool overrideOutlineColor;
-
-    public Color outlineColor = Color.white;
-
     public string ResolvedDisplayName =>
         string.IsNullOrWhiteSpace(itemDisplayName) ? gameObject.name : itemDisplayName;
-
-    public bool HasPrankValueLabel => !string.IsNullOrWhiteSpace(prankValueLabel);
 
     void Awake()
     {
@@ -86,6 +79,9 @@ public class ItemInformation : MonoBehaviour
                     break;
                 case ItemCategory.DangerousGoods:
                     itemDescription = "\u5371\u9669\u54C1\uFF0C\u6295\u5165\u5371\u9669\u901A\u9053\u3002";
+                    break;
+                case ItemCategory.Prop:
+                    itemDescription = "道具：拾取后触发自身效果，投入任意通道仅销毁、无奖惩。";
                     break;
             }
         }

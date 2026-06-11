@@ -3,7 +3,9 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// 挂在可切割物体上。刀刃碰到 Collider 时分离外壳与内容物，各自变为可抓取物体。
+/// 挂在可切割物体上。刀刃碰到 Collider 时销毁本物体，并按 <see cref="dropEntries"/>
+/// 在物体位置实例化对应数量的 prefab。每个 prefab 自带的 ItemInformation / Rigidbody /
+/// Collider / 外观等会被沿用，无需在此重复配置。
 /// </summary>
 [DisallowMultipleComponent]
 public class Cuttable : MonoBehaviour
@@ -12,37 +14,29 @@ public class Cuttable : MonoBehaviour
 
     public static IReadOnlyCollection<Cuttable> AllActive => sActive;
 
-    [Header("结构")]
-    [Tooltip("外壳根物体。切割后会解除父子关系。留空则使用本物体。")]
-    public Transform shellRoot;
-
-    [Tooltip("内容物。可以是容器（切其子物体）或单个物体（直接分离）。留空则分离外壳下所有子物体。")]
-    public Transform contentsRoot;
-
     [Header("分离效果")]
     public GameObject shatterEffectPrefab;
 
-    [Tooltip("内容物分离时沿远离外壳方向的冲量（牛·秒）。")]
-    public float contentSeparateImpulse = 0.35f;
-
-    [Tooltip("分离后各部分的初始向下速度（米/秒）。0 则纯靠重力。")]
-    public float separateDropInitialSpeed = 0.5f;
-
-    public bool destroySelfAfterCut = false;
+    [Tooltip("分离后所有 prefab 实例的初始向下速度（米/秒）。0 即纯靠重力。")]
+    public float dropInitialSpeed = 0.5f;
 
     [Header("未切开投入通道")]
-    [Tooltip("仍保持外壳与子物体组合时扔进通道显示的字幕。")]
+    [Tooltip("仍未被切割就被投入通道时显示的字幕。")]
     public string abandonedMixtureMessage = "Abandoned mixture";
 
     [Tooltip("未切开投入通道时的信用点变化（填负数表示惩罚）。")]
     public int abandonedMixtureCredits = -50;
 
-    [Header("切割后的物品信息")]
-    [Tooltip("外壳分离后应当呈现的 ItemInformation 数据。留空则保留原有数据（多半是整体复合物的介绍，可能与外壳本身不符）。")]
-    public ItemPartInfoOverride shellInfo;
+    [Header("分离后生成 - 必出")]
+    [Tooltip("切割触发后销毁本物品，并按此列表在本物体位置实例化 prefab（必定生成）。\n" +
+             "每条可设置 prefab + 数量。prefab 自带的 ItemInformation / Rigidbody /\n" +
+             "Collider / 外观等信息会被沿用，无需在此重复配置。")]
+    public List<DetachSpawnEntry> dropEntries = new List<DetachSpawnEntry>();
 
-    [Tooltip("内容物分离后各自的 ItemInformation 数据。优先按 targetPart 引用匹配，未指定时按数组顺序匹配 contents（contentsRoot 或 shell 下从最后一个子物体开始倒序）。多出的内容物会保留原有数据。")]
-    public ItemPartInfoOverride[] contentInfos;
+    [Header("分离后生成 - 可能出")]
+    [Tooltip("切割时每条独立按 spawnChance 摇一次：命中则该条所有 count 一起出，\n" +
+             "未命中则一个都不出。用于配置低概率掉落的彩蛋/惊喜物品。")]
+    public List<OptionalDetachSpawnEntry> optionalDropEntries = new List<OptionalDetachSpawnEntry>();
 
     public UnityEvent onCut;
 
@@ -50,21 +44,8 @@ public class Cuttable : MonoBehaviour
 
     public bool IsCut => cut;
 
-    /// <summary>尚未切割且外壳与子物体仍保持组合状态。</summary>
-    public bool IsStillAssembled
-    {
-        get
-        {
-            if (cut) return false;
-
-            Transform shell = shellRoot != null ? shellRoot : transform;
-
-            if (contentsRoot != null)
-                return contentsRoot.parent == shell || contentsRoot.IsChildOf(shell);
-
-            return shell.childCount > 0;
-        }
-    }
+    /// <summary>尚未被刀切开（投入分拣通道时仍按"未拆混合物"惩罚）。</summary>
+    public bool IsStillAssembled => !cut;
 
     void OnEnable() => sActive.Add(this);
 
@@ -146,63 +127,17 @@ public class Cuttable : MonoBehaviour
 
         ReleaseFromWorkTables();
 
+        Vector3 anchor = ItemInfoWorldUI.CalculateWorldBounds(gameObject).center;
+
         if (shatterEffectPrefab != null)
-            Instantiate(shatterEffectPrefab, transform.position, transform.rotation);
+            Instantiate(shatterEffectPrefab, anchor, transform.rotation);
 
-        Transform shell = shellRoot != null ? shellRoot : transform;
-        List<Transform> contents = CollectContents();
-        Vector3 shellCenter = ItemInfoWorldUI.CalculateWorldBounds(shell.gameObject).center;
-
-        for (int i = 0; i < contents.Count; i++)
-        {
-            Transform child = contents[i];
-            if (child == null || child == shell) continue;
-
-            Vector3 pushDir = child.position - shellCenter;
-            if (pushDir.sqrMagnitude < 1e-6f) pushDir = Vector3.down;
-            else pushDir.Normalize();
-
-            MakeInteractablePart(child, pushDir * contentSeparateImpulse);
-            IgnoreCollidersBetween(child.gameObject, shell.gameObject);
-
-            ResolveContentInfo(child, i)?.ApplyTo(child);
-        }
-
-        DetachRemainingChildren(shell, contents);
-        MakeInteractablePart(shell);
-        shellInfo?.ApplyTo(shell);
+        DetachSpawnUtility.SpawnEntries(dropEntries, anchor, dropInitialSpeed);
+        DetachSpawnUtility.SpawnOptionalEntries(optionalDropEntries, anchor, dropInitialSpeed);
 
         onCut?.Invoke();
 
-        if (destroySelfAfterCut)
-            Destroy(gameObject);
-        else
-            enabled = false;
-    }
-
-    ItemPartInfoOverride ResolveContentInfo(Transform child, int index)
-    {
-        if (contentInfos == null || contentInfos.Length == 0) return null;
-
-        // 优先按 targetPart 引用匹配
-        for (int i = 0; i < contentInfos.Length; i++)
-        {
-            ItemPartInfoOverride info = contentInfos[i];
-            if (info != null && info.targetPart == child)
-                return info;
-        }
-
-        // 回退到按数组顺序匹配，但跳过已绑定到其他 targetPart 的条目
-        for (int i = 0, used = 0; i < contentInfos.Length; i++)
-        {
-            ItemPartInfoOverride info = contentInfos[i];
-            if (info == null) continue;
-            if (info.targetPart != null) continue;
-            if (used == index) return info;
-            used++;
-        }
-
-        return null;
+        Destroy(gameObject);
     }
 
     void ReleaseFromWorkTables()
@@ -212,118 +147,6 @@ public class Cuttable : MonoBehaviour
         {
             if (tables[i] != null)
                 tables[i].ReleasePlacedItemForCut(gameObject);
-        }
-    }
-
-    List<Transform> CollectContents()
-    {
-        var contents = new List<Transform>();
-        Transform shell = shellRoot != null ? shellRoot : transform;
-
-        if (contentsRoot != null)
-        {
-            if (contentsRoot.childCount > 0)
-            {
-                for (int i = contentsRoot.childCount - 1; i >= 0; i--)
-                    contents.Add(contentsRoot.GetChild(i));
-            }
-            else if (contentsRoot != shell)
-                contents.Add(contentsRoot);
-            return contents;
-        }
-
-        if (shell != null && shell.childCount > 0)
-        {
-            for (int i = shell.childCount - 1; i >= 0; i--)
-                contents.Add(shell.GetChild(i));
-            return contents;
-        }
-
-        for (int i = transform.childCount - 1; i >= 0; i--)
-        {
-            Transform c = transform.GetChild(i);
-            if (shell != null && (c == shell || c.IsChildOf(shell))) continue;
-            contents.Add(c);
-        }
-        return contents;
-    }
-
-    void DetachRemainingChildren(Transform shell, List<Transform> alreadyHandled)
-    {
-        if (shell == null) return;
-
-        Vector3 shellCenter = ItemInfoWorldUI.CalculateWorldBounds(shell.gameObject).center;
-        for (int i = shell.childCount - 1; i >= 0; i--)
-        {
-            Transform child = shell.GetChild(i);
-            if (child == null || alreadyHandled.Contains(child)) continue;
-
-            Vector3 pushDir = child.position - shellCenter;
-            if (pushDir.sqrMagnitude < 1e-6f) pushDir = Vector3.down;
-            else pushDir.Normalize();
-
-            MakeInteractablePartStatic(child, pushDir * contentSeparateImpulse);
-            IgnoreCollidersBetween(child.gameObject, shell.gameObject);
-        }
-    }
-
-    void MakeInteractablePart(Transform part, Vector3 impulse)
-    {
-        MakeInteractablePartStatic(part, impulse);
-    }
-
-    static void MakeInteractablePartStatic(Transform part, Vector3 impulse, bool applyImpulseAsVelocity = false)
-    {
-        if (part == null) return;
-
-        part.SetParent(null, true);
-
-        Rigidbody body = part.GetComponent<Rigidbody>();
-        if (body == null) body = part.gameObject.AddComponent<Rigidbody>();
-
-        body.isKinematic = false;
-        body.useGravity = true;
-        body.detectCollisions = true;
-        body.constraints = RigidbodyConstraints.None;
-        body.velocity = Vector3.zero;
-        body.angularVelocity = Vector3.zero;
-
-        Physics.SyncTransforms();
-        body.WakeUp();
-
-        if (impulse.sqrMagnitude > 1e-6f)
-        {
-            if (applyImpulseAsVelocity)
-                body.velocity = impulse;
-            else
-                body.AddForce(impulse, ForceMode.Impulse);
-        }
-
-        Cuttable other = part.GetComponent<Cuttable>();
-        if (other != null && other.enabled)
-            other.enabled = false;
-    }
-
-    void MakeInteractablePart(Transform part)
-    {
-        Vector3 vel = separateDropInitialSpeed > 0f
-            ? Vector3.down * separateDropInitialSpeed
-            : Vector3.zero;
-        MakeInteractablePartStatic(part, vel, applyImpulseAsVelocity: true);
-    }
-
-    static void IgnoreCollidersBetween(GameObject a, GameObject b)
-    {
-        Collider[] aCols = a.GetComponentsInChildren<Collider>(true);
-        Collider[] bCols = b.GetComponentsInChildren<Collider>(true);
-        for (int i = 0; i < aCols.Length; i++)
-        {
-            if (aCols[i] == null) continue;
-            for (int j = 0; j < bCols.Length; j++)
-            {
-                if (bCols[j] == null) continue;
-                Physics.IgnoreCollision(aCols[i], bCols[j], true);
-            }
         }
     }
 }

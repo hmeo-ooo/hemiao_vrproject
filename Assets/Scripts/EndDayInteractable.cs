@@ -4,7 +4,8 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 挂在 bed 等休息点物体上：玩家靠近时显示白色描边与「按 E 提前结束这一天」提示；
-/// 当场上所有物品都已处理完毕时，按 E 可提前结束本关。
+/// 当场景内没有待处理的垃圾、且垃圾堆（Garbage dump / TrashHeap）不会再补充新垃圾时，
+/// 按 E 可提前结束本关。
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class EndDayInteractable : MonoBehaviour
@@ -45,11 +46,26 @@ public class EndDayInteractable : MonoBehaviour
     [Tooltip("提示面板高度（世界单位）。")]
     public float promptPanelHeight = 0.45f;
 
+    [Header("无法提前结束时的字幕")]
+    [Tooltip("场上仍有待处理垃圾时按 E 显示的字幕。{0} = 剩余垃圾数量。")]
+    public string cannotEndDayGarbageMessage = "场上仍有 {0} 件垃圾待处理，无法结束这一天。";
+
+    [Tooltip("垃圾堆还会继续补充时按 E 显示的字幕。")]
+    public string cannotEndDayMoreSpawningMessage = "垃圾堆还会继续产出垃圾，无法结束这一天。";
+
+    [Tooltip("无法判断具体原因时的兜底字幕。")]
+    public string cannotEndDayGenericMessage = "仍有工作未完成，无法结束这一天。";
+
+    public float cannotEndDaySubtitleDuration = 2.5f;
+
+    public Color cannotEndDaySubtitleColor = new Color(1f, 0.75f, 0.4f, 1f);
+
     [Header("结束回合")]
     public LevelSessionController sessionController;
 
+    /// <summary>玩家在 bed 交互范围内时，E 键优先用于结束/提示，避免误触审视。</summary>
     public static bool ShouldConsumeInteractKey =>
-        Instance != null && Instance._playerInRange && Instance._canEndDay;
+        Instance != null && Instance._playerInRange;
 
     static EndDayInteractable Instance { get; set; }
 
@@ -119,8 +135,13 @@ public class EndDayInteractable : MonoBehaviour
         _canEndDay = CanEndDayNow();
         RefreshPromptVisuals();
 
-        if (_canEndDay && Input.GetKeyDown(interactKey))
-            TryEndDayEarly();
+        if (Input.GetKeyDown(interactKey))
+        {
+            if (_canEndDay)
+                TryEndDayEarly();
+            else
+                ShowCannotEndDaySubtitle();
+        }
     }
 
     void LateUpdate()
@@ -144,6 +165,41 @@ public class EndDayInteractable : MonoBehaviour
 
         if (sessionController != null)
             sessionController.EndRoundEarly();
+    }
+
+    void ShowCannotEndDaySubtitle()
+    {
+        string message = BuildCannotEndDayMessage();
+        if (string.IsNullOrEmpty(message)) return;
+
+        CreditManager credits = CreditManager.Instance;
+        if (credits != null)
+            credits.ShowSubtitle(message, cannotEndDaySubtitleDuration, cannotEndDaySubtitleColor);
+        else
+            Debug.Log($"[EndDayInteractable] {message}", this);
+    }
+
+    string BuildCannotEndDayMessage()
+    {
+        LevelManager lm = LevelManager.Instance;
+        if (lm == null || !lm.IsGameplayActive)
+            return cannotEndDayGenericMessage;
+
+        int remaining = lm.CountGameplayGarbageInScene();
+        if (remaining > 0)
+        {
+            if (string.IsNullOrEmpty(cannotEndDayGarbageMessage))
+                return cannotEndDayGenericMessage;
+            return cannotEndDayGarbageMessage.Replace("{0}", remaining.ToString());
+        }
+
+        if (!lm.IsAllItemsProcessed())
+        {
+            if (!string.IsNullOrEmpty(cannotEndDayMoreSpawningMessage))
+                return cannotEndDayMoreSpawningMessage;
+        }
+
+        return cannotEndDayGenericMessage;
     }
 
     void SetPlayerInRange(bool inRange)
