@@ -71,6 +71,14 @@ public class AisleDetection : MonoBehaviour
             return;
         }
 
+        // 被磁石（PropEffect.Magnet）认领的物品：磁石未投入前，附着物自身的 collider 也可能擦到通道触发器；
+        // 跳过它们，等磁石本体进来时再由 HandleMagnetAisleThrow 统一结算。
+        if (PropEffect.IsClaimedByMagnet(info.gameObject))
+        {
+            if (debugLogging) Debug.Log($"[AisleDetection] {info.gameObject.name} claimed by magnet, ignored.");
+            return;
+        }
+
         int id = info.gameObject.GetInstanceID();
         if (processedInstanceIds.Contains(id))
         {
@@ -83,6 +91,14 @@ public class AisleDetection : MonoBehaviour
 
         if (info.category == ItemInformation.ItemCategory.Prop)
         {
+            // 磁石优先自处理：返回 true 表示已结算+销毁，由它接管。
+            PropEffect prop = info.GetComponent<PropEffect>();
+            if (prop != null && prop.HandleMagnetAisleThrow(this))
+            {
+                processedInstanceIds.Add(id);
+                return;
+            }
+
             if (debugLogging)
                 Debug.Log($"[AisleDetection] {info.gameObject.name} is a Prop, destroyed without rewards or penalty.");
 

@@ -1,40 +1,22 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-113627706299696466
-MonoBehaviour:
-  m_ObjectHideFlags: 11
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  version: 7
 --- !u!21 &2100000
 Material:
-  serializedVersion: 8
+  serializedVersion: 6
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Parallax_Full_05_Alt
-  m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _EMISSION
-  m_InvalidKeywords: []
-  m_LightmapFlags: 0
+  m_Shader: {fileID: 4800000, guid: 2a33a166317493947a7be330dcc78a05, type: 3}
+  m_ShaderKeywords: _FACADETEXTURE1_ON _FACADETEXTURE2_ON _FACADETEXTURE_ON _GRUNGEDECALSWITCH_1_ON
+    _GRUNGEDECALSWITCH_2_ON _SHOWFACADE_ON _SMOOTHNESSTEXTURE_ON
+  m_LightmapFlags: 2
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap:
-    RenderType: Opaque
+  stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -50,35 +32,11 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _BaseMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _BumpMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _Ceiling:
         m_Texture: {fileID: 2800000, guid: 96db0ef7541e12947baea7ceea66d512, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Ceiling1:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _DetailAlbedoMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _DetailMask:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _DetailNormalMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _EmissionMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -106,24 +64,8 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MetallicGlossMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _Normals:
         m_Texture: {fileID: 2800000, guid: 49488522764f02748bae0cb0e5083004, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _OcclusionMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _ParallaxMap:
-        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Props:
@@ -131,10 +73,6 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Props1:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _SpecGlossMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -194,41 +132,15 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - unity_Lightmaps:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - unity_LightmapsInd:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - unity_ShadowMasks:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
     m_Floats:
-    - _AlphaClip: 0
-    - _AlphaToMask: 0
+    - _AlphaCutoff: 0.5
     - _BackWallTexTiling: 0.334
     - _BackWallTexTiling1: 0
-    - _Blend: 0
-    - _BlendModePreserveSpecular: 1
-    - _BumpScale: 1
     - _CeilingTexTiling: 0.3
     - _CeilingTexTiling1: 0
-    - _ClearCoatMask: 0
-    - _ClearCoatSmoothness: 0
-    - _Cull: 2
-    - _Cutoff: 0.5
     - _DecalTransparency_1: 0.081
     - _DecalTransparency_2: 1
-    - _DetailAlbedoMapScale: 1
-    - _DetailNormalMapScale: 1
-    - _DstBlend: 0
-    - _DstBlendAlpha: 0
     - _EmissionAmount: 1
-    - _EnvironmentReflections: 1
     - _FacadeExtrudeAmount: -0.002
     - _FacadeExtrudeAmount1: 0.002
     - _FacadeSmoothness: 0.2
@@ -239,9 +151,6 @@ Material:
     - _FacadeTiling1: 1
     - _FloorTexTiling: 0.3
     - _FloorTexTiling1: 0
-    - _GlossMapScale: 0
-    - _Glossiness: 0
-    - _GlossyReflections: 0
     - _GlowThreshold: 0.95
     - _GrungeDecalSwitch_1: 1
     - _GrungeDecalSwitch_2: 1
@@ -249,12 +158,8 @@ Material:
     - _LinkTiling_2useXonly: 1
     - _Metallic: 0
     - _NormalAmount: 1
-    - _OcclusionStrength: 1
-    - _Parallax: 0.005
     - _PropsTexTiling: 2
     - _PropsTexTiling1: 0
-    - _QueueOffset: 0
-    - _ReceiveShadows: 1
     - _RoomEmission: 3.1
     - _RoomIntensity: 4
     - _RoomIntensity1: 1
@@ -263,13 +168,8 @@ Material:
     - _ShowFacade: 1
     - _Smoothness: 1
     - _SmoothnessTexture: 1
-    - _SmoothnessTextureChannel: 0
     - _SmoothnessValue: 0.625
     - _SmoothnessValue1: 1
-    - _SpecularHighlights: 1
-    - _SrcBlend: 1
-    - _SrcBlendAlpha: 1
-    - _Surface: 0
     - _SwitchPlane: 0
     - _SwitchPlane1: 0
     - _SwitchPlane2: 0
@@ -285,15 +185,11 @@ Material:
     - _WallGlowThreshold: 0.95
     - _WalltexTiling: 0.334
     - _WalltexTiling1: 0
-    - _WorkflowMode: 1
-    - _ZWrite: 1
     - __dirty: 0
     - _power: 2
     - _scale: 1.04
     m_Colors:
-    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _PositionOffsetXYZroomsWprops: {r: 0.001, g: 0, b: 0.001, a: 0}
     - _PositionOffsetXYZroomsWprops1: {r: 0, g: 0, b: 0, a: 0}
     - _RoomColorTint: {r: 1, g: 1, b: 1, a: 0}
@@ -301,7 +197,6 @@ Material:
     - _RoomTint: {r: 1, g: 0.4413709, b: 0, a: 0}
     - _RoomsXYZPropsW: {r: 0.0499, g: 0.167, b: 0.0499, a: 1.12}
     - _RoomsXYZPropsW1: {r: 1, g: 1, b: 1, a: 1}
-    - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _emitOverlay: {r: 0.44705883, g: 0.37859038, b: 0, a: 0}
     - _emitOverlay1: {r: 0.54, g: 0.3913412, b: 0.16092002, a: 0}
   m_BuildTextureStacks: []

@@ -104,6 +104,8 @@ public class TVStaticOverlay : MonoBehaviour
         tint = p.tint;
 
         centerRestColor = p.centerRestColor;
+        if (centerRestColor.a <= 0f)
+            centerRestColor = Color.white;
         centerFlashColor = p.flashColor;
         flashDuration = Mathf.Max(0f, p.flashDuration);
         pulseScale = Mathf.Max(1f, p.centerPulseScale);
@@ -254,8 +256,10 @@ public class TVStaticOverlay : MonoBehaviour
     void ApplyCenterAppearance(Sprite sprite, Vector2 size)
     {
         if (centerImage == null || centerRt == null) return;
+        if (size.x < 8f || size.y < 8f)
+            size = new Vector2(220f, 220f);
+
         centerImage.sprite = sprite;
-        // sprite 为 null 时 Image 会回退到默认 UI 矩形纹理，仍然可见
         centerRt.sizeDelta = size;
         centerRt.localScale = Vector3.one;
 
@@ -305,8 +309,13 @@ public class TVStaticOverlay : MonoBehaviour
     void ApplyImageTint()
     {
         if (noiseImage == null) return;
+        // intensity 为主透明度；tint.a 为额外乘子。Inspector 里 tint 的 Alpha 常被误设为 0 导致雪花不可见。
+        float tintAlpha = tint.a > 0f ? tint.a : 1f;
+        float alpha = Mathf.Clamp01(intensity * tintAlpha);
         Color c = tint;
-        c.a *= intensity;
+        if (c.r + c.g + c.b < 0.01f)
+            c = Color.white;
+        c.a = alpha;
         noiseImage.color = c;
     }
 }

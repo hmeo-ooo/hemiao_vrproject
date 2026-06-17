@@ -1,37 +1,37 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 /// <summary>
-/// 游戏内 HUD：信用点、连击、Day、倒计时。
-/// 默认以 Screen Space Overlay 固定在屏幕左上角。
+/// 游戏内 HUD：Day、倒计时、连击、信用点。
+/// Screen Space Overlay 2D UI，固定显示在屏幕左上角。
 /// </summary>
-[RequireComponent(typeof(RectTransform))]
+[RequireComponent(typeof(Canvas), typeof(RectTransform))]
 public class BillboardUI : MonoBehaviour
 {
+    const string HudPanelName = "HudPanel";
+
     [Header("Screen Space HUD")]
-    [Tooltip("启用后固定为 2D UI，显示在屏幕左上角，不再跟随相机旋转。")]
+    [Tooltip("固定为屏幕 2D UI（Screen Space Overlay），显示在左上角。")]
     public bool useScreenSpaceTopLeft = true;
 
-    public Vector2 hudScreenOffset = new Vector2(20f, -20f);
+    public int canvasSortOrder = 50;
+    public Vector2 hudScreenOffset = new Vector2(24f, -24f);
     public float hudFontSize = 28f;
-    public float hudLineSpacing = 6f;
+    public float hudLineSpacing = 8f;
     public Vector2 hudLineSize = new Vector2(420f, 36f);
 
-    [Tooltip("隐藏 Panel 半透明背景，仅保留文字。")]
+    [Tooltip("隐藏 HUD 面板背景，仅保留文字。")]
     public bool hidePanelBackground = true;
 
-    [Header("HUD - Credits")]
-    [Tooltip("TMP text for earned credits (same panel as level and countdown).")]
+    [Header("HUD 文本（可留空，按名称自动查找：day / countdown / combo / credits）")]
+    public TMP_Text dayText;
     public TMP_Text creditsText;
-
-    [Tooltip("Format string. {0} is the current credit total.")]
-    public string creditsFormat = "credits:{0}";
-
-    [Header("HUD - Combo")]
-    [Tooltip("TMP text for throw combo. Auto-created beside credits when empty.")]
     public TMP_Text comboText;
+
+    [Header("HUD - 文案格式")]
+    public string creditsFormat = "Credits: {0}";
 
     [Tooltip("{0} = current combo count.")]
     public string comboFormat = "Combo x{0}";
@@ -44,6 +44,14 @@ public class BillboardUI : MonoBehaviour
     public Color comboBonusColor = new Color(0.4f, 1f, 0.5f, 1f);
 
     static readonly string[] HudLineOrder = { "day", "countdown", "combo", "credits" };
+
+    RectTransform _hudPanel;
+
+    void Awake()
+    {
+        if (useScreenSpaceTopLeft)
+            ApplyScreenSpaceLayout();
+    }
 
     void OnEnable()
     {
@@ -59,14 +67,174 @@ public class BillboardUI : MonoBehaviour
 
     void Start()
     {
-        if (useScreenSpaceTopLeft)
-            ApplyScreenSpaceLayout();
-
         EnsureComboText();
         SubscribeCredits();
         SubscribeCombo();
         RefreshCreditsDisplay();
         RefreshComboDisplay();
+    }
+
+    public void RefreshHudLayout()
+    {
+        if (useScreenSpaceTopLeft)
+            ApplyScreenSpaceLayout();
+    }
+
+    void ApplyScreenSpaceLayout()
+    {
+        SetupCanvas();
+        ResolveHudTexts();
+        _hudPanel = EnsureHudPanel();
+        OrganizeHudLines(_hudPanel);
+        RefreshCreditsDisplay();
+        RefreshComboDisplay();
+    }
+
+    void SetupCanvas()
+    {
+        var canvas = GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.worldCamera = null;
+        canvas.sortingOrder = canvasSortOrder;
+        canvas.pixelPerfect = false;
+
+        if (GetComponent<GraphicRaycaster>() == null)
+            gameObject.AddComponent<GraphicRaycaster>();
+
+        var scaler = GetComponent<CanvasScaler>();
+        if (scaler == null)
+            scaler = gameObject.AddComponent<CanvasScaler>();
+
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var root = transform as RectTransform;
+        root.localScale = Vector3.one;
+        root.anchorMin = Vector2.zero;
+        root.anchorMax = Vector2.one;
+        root.pivot = new Vector2(0.5f, 0.5f);
+        root.offsetMin = Vector2.zero;
+        root.offsetMax = Vector2.zero;
+        root.anchoredPosition = Vector2.zero;
+    }
+
+    void ResolveHudTexts()
+    {
+        if (dayText == null) dayText = FindHudText("day");
+        if (creditsText == null) creditsText = FindHudText("credits");
+        if (comboText == null) comboText = FindHudText("combo");
+    }
+
+    TMP_Text FindHudText(string lineName)
+    {
+        Transform t = transform.Find(HudPanelName + "/" + lineName);
+        if (t == null) t = transform.Find("Panel/" + lineName);
+        if (t == null) t = transform.Find(lineName);
+        return t != null ? t.GetComponent<TMP_Text>() : null;
+    }
+
+    RectTransform EnsureHudPanel()
+    {
+        Transform existing = transform.Find(HudPanelName);
+        if (existing == null)
+        {
+            Transform legacyPanel = transform.Find("Panel");
+            if (legacyPanel != null)
+            {
+                legacyPanel.name = HudPanelName;
+                existing = legacyPanel;
+            }
+        }
+
+        GameObject panelGo;
+        if (existing != null)
+        {
+            panelGo = existing.gameObject;
+        }
+        else
+        {
+            panelGo = new GameObject(HudPanelName, typeof(RectTransform));
+            panelGo.layer = gameObject.layer;
+            panelGo.transform.SetParent(transform, false);
+        }
+
+        var panelRect = panelGo.GetComponent<RectTransform>();
+        panelRect.localScale = Vector3.one;
+        panelRect.anchorMin = new Vector2(0f, 1f);
+        panelRect.anchorMax = new Vector2(0f, 1f);
+        panelRect.pivot = new Vector2(0f, 1f);
+        panelRect.anchoredPosition = hudScreenOffset;
+
+        var bg = panelGo.GetComponent<Image>();
+        if (bg != null)
+            bg.enabled = !hidePanelBackground;
+
+        var layout = panelGo.GetComponent<VerticalLayoutGroup>();
+        if (layout == null)
+            layout = panelGo.AddComponent<VerticalLayoutGroup>();
+
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.spacing = hudLineSpacing;
+        layout.padding = new RectOffset(0, 0, 0, 0);
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = false;
+        layout.childForceExpandHeight = false;
+
+        var fitter = panelGo.GetComponent<ContentSizeFitter>();
+        if (fitter == null)
+            fitter = panelGo.AddComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        return panelRect;
+    }
+
+    void OrganizeHudLines(RectTransform hudPanel)
+    {
+        float lineHeight = Mathf.Max(hudLineSize.y, hudFontSize + 6f);
+
+        for (int i = 0; i < HudLineOrder.Length; i++)
+        {
+            string lineName = HudLineOrder[i];
+            TMP_Text line = GetLineText(lineName);
+            if (line == null) continue;
+
+            var rt = line.rectTransform;
+            rt.SetParent(hudPanel, false);
+            rt.localScale = Vector3.one;
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.sizeDelta = new Vector2(hudLineSize.x, lineHeight);
+
+            var le = line.GetComponent<LayoutElement>();
+            if (le == null) le = line.gameObject.AddComponent<LayoutElement>();
+            le.minHeight = lineHeight;
+            le.preferredHeight = lineHeight;
+            le.preferredWidth = hudLineSize.x;
+
+            line.fontSize = hudFontSize;
+            line.enableAutoSizing = false;
+            line.alignment = TextAlignmentOptions.MidlineLeft;
+            line.margin = Vector4.zero;
+            line.raycastTarget = false;
+            line.overflowMode = TextOverflowModes.Overflow;
+        }
+    }
+
+    TMP_Text GetLineText(string lineName)
+    {
+        switch (lineName)
+        {
+            case "day": return dayText ?? FindHudText("day");
+            case "countdown": return FindHudText("countdown");
+            case "combo": return comboText ?? FindHudText("combo");
+            case "credits": return creditsText ?? FindHudText("credits");
+            default: return null;
+        }
     }
 
     void SubscribeCredits()
@@ -101,7 +269,9 @@ public class BillboardUI : MonoBehaviour
 
     void RefreshCreditsDisplay()
     {
+        if (creditsText == null) creditsText = FindHudText("credits");
         if (creditsText == null) return;
+
         int total = CreditManager.Instance != null ? CreditManager.Instance.credits : 0;
         creditsText.text = string.Format(creditsFormat, total);
     }
@@ -126,139 +296,24 @@ public class BillboardUI : MonoBehaviour
             : combo > 0 ? comboActiveColor : comboIdleColor;
     }
 
-    void ApplyScreenSpaceLayout()
-    {
-        var canvas = GetComponent<Canvas>();
-        if (canvas != null)
-        {
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.worldCamera = null;
-        }
-
-        var scaler = GetComponent<CanvasScaler>();
-        if (scaler != null)
-        {
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-        }
-
-        var root = transform as RectTransform;
-        if (root != null)
-        {
-            root.localScale = Vector3.one;
-            root.anchorMin = Vector2.zero;
-            root.anchorMax = Vector2.one;
-            root.pivot = new Vector2(0.5f, 0.5f);
-            root.offsetMin = Vector2.zero;
-            root.offsetMax = Vector2.zero;
-            root.anchoredPosition = Vector2.zero;
-        }
-
-        RectTransform panelRect = FindHudPanelRect();
-        if (panelRect == null) return;
-
-        panelRect.localScale = Vector3.one;
-        panelRect.anchorMin = new Vector2(0f, 1f);
-        panelRect.anchorMax = new Vector2(0f, 1f);
-        panelRect.pivot = new Vector2(0f, 1f);
-        panelRect.anchoredPosition = hudScreenOffset;
-        panelRect.sizeDelta = new Vector2(hudLineSize.x, 220f);
-
-        var bg = panelRect.GetComponent<Image>();
-        if (bg != null && hidePanelBackground)
-            bg.enabled = false;
-
-        LayoutHudLines(panelRect);
-    }
-
-    RectTransform FindHudPanelRect()
-    {
-        if (creditsText != null)
-        {
-            var parent = creditsText.transform.parent as RectTransform;
-            if (parent != null) return parent;
-        }
-
-        var panel = transform.Find("Panel") as RectTransform;
-        return panel;
-    }
-
-    void LayoutHudLines(RectTransform panelRect)
-    {
-        var lines = CollectHudLines(panelRect);
-        float y = 0f;
-        float lineHeight = Mathf.Max(hudLineSize.y, hudFontSize + 4f);
-
-        for (int i = 0; i < lines.Count; i++)
-        {
-            TMP_Text line = lines[i];
-            if (line == null) continue;
-
-            var rt = line.rectTransform;
-            rt.SetParent(panelRect, false);
-            rt.anchorMin = new Vector2(0f, 1f);
-            rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.localScale = Vector3.one;
-            rt.sizeDelta = hudLineSize;
-            rt.anchoredPosition = new Vector2(0f, y);
-
-            line.fontSize = hudFontSize;
-            line.enableAutoSizing = false;
-            line.alignment = TextAlignmentOptions.TopLeft;
-            line.margin = Vector4.zero;
-            line.raycastTarget = false;
-
-            y -= lineHeight + hudLineSpacing;
-        }
-    }
-
-    List<TMP_Text> CollectHudLines(RectTransform panelRect)
-    {
-        var result = new List<TMP_Text>();
-        for (int i = 0; i < HudLineOrder.Length; i++)
-        {
-            Transform child = panelRect.Find(HudLineOrder[i]);
-            if (child == null) continue;
-            var text = child.GetComponent<TMP_Text>();
-            if (text != null)
-                result.Add(text);
-        }
-        return result;
-    }
-
     void EnsureComboText()
     {
         if (comboText != null) return;
 
-        RectTransform panelRect = FindHudPanelRect();
-        if (panelRect == null) return;
-
-        Transform existing = panelRect.Find("combo");
+        RectTransform hudPanel = _hudPanel != null ? _hudPanel : EnsureHudPanel();
+        Transform existing = hudPanel.Find("combo");
         if (existing != null)
         {
             comboText = existing.GetComponent<TMP_Text>();
             return;
         }
 
-        TMP_Text template = creditsText;
-        if (template == null)
-        {
-            for (int i = 0; i < HudLineOrder.Length; i++)
-            {
-                Transform child = panelRect.Find(HudLineOrder[i]);
-                if (child == null) continue;
-                template = child.GetComponent<TMP_Text>();
-                if (template != null) break;
-            }
-        }
+        TMP_Text template = creditsText ?? dayText ?? FindHudText("countdown");
         if (template == null) return;
 
         var go = new GameObject("combo", typeof(RectTransform), typeof(CanvasRenderer));
         go.layer = template.gameObject.layer;
-        go.transform.SetParent(panelRect, false);
+        go.transform.SetParent(hudPanel, false);
 
         comboText = go.AddComponent<TextMeshProUGUI>();
         comboText.font = template.font;
@@ -267,7 +322,6 @@ public class BillboardUI : MonoBehaviour
         comboText.raycastTarget = false;
         comboText.text = string.Format(comboFormat, 0);
 
-        if (useScreenSpaceTopLeft)
-            LayoutHudLines(panelRect);
+        OrganizeHudLines(hudPanel);
     }
 }

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4651558418068127309}
   - component: {fileID: 6984640713380742452}
   - component: {fileID: 1725545869897262483}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Basic_core energy 2
   m_TagString: CoreEnergy
   m_Icon: {fileID: 0}
@@ -31,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -1.76, y: 0.62, z: 5.37}
-  m_LocalScale: {x: 1.46, y: 1.46, z: 1.46}
+  m_LocalScale: {x: 1.45, y: 1.45, z: 1.45}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -127,7 +127,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 2
   complexity: 0
-  creditsOnCorrectThrow: 400
+  creditsOnCorrectThrow: 450
   itemDisplayName: "\u8109\u51B2\u80FD\u6E90"
   itemDescription: "\u5E7D\u84DD\u8272\u7684\u9AD8\u7EA7\u6838\u5FC3\uFF0C\u57FA\u5730\u6700\u503C\u94B1\u7684\u5B9D\u8D1D\u4E4B\u4E00\u3002\u8BF7\u8F7B\u62FF\u8F7B\u653E\uFF0C\u53CC\u624B\u628A\u5B83\u4F9B\u5949\u8FDB\u3010\u80FD\u6E90\u901A\u9053\u3011\uFF0C\u8FDF\u4E00\u79D2\u6263\u4F60\u7EE9\u6548\u3002"
 --- !u!64 &1725545869897262483

@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 7982132996567729051}
   - component: {fileID: 3851920620170368970}
   - component: {fileID: 9012345670000000001}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Dangerous_1
   m_TagString: DangerousGoods
   m_Icon: {fileID: 0}

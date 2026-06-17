@@ -10,7 +10,8 @@ public class ItemInformation : MonoBehaviour
         DangerousGoods,
         /// <summary>
         /// 道具类。投入任意分拣通道仅销毁、无奖惩；每个具体道具的实际效果由挂在物品上的
-        /// PropPickupEffect 子类（如 CoinPickupEffect）实现，通常在被玩家抓取时触发。
+        /// <see cref="PropEffect"/> 组件（按 propType 选择 Coin / Magnet / Lighter）实现，
+        /// 通常在被玩家抓取或持握期间触发。
         /// </summary>
         Prop,
     }

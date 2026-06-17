@@ -134,11 +134,6 @@ public class CharacterMove : MonoBehaviour
         UpdateCrouchState();
 
         // ??????��???????????? Esc ????
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
     }
 
     /// <summary>
@@ -223,6 +218,18 @@ public class CharacterMove : MonoBehaviour
     }
 
     public bool IsCrouching => isCrouching;
+
+    /// <summary>外部重置玩家朝向（如关卡开始时），同步内部 yaw 避免被 FixedUpdate 覆盖。</summary>
+    public void SetYaw(float degrees)
+    {
+        yaw = degrees;
+        Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
+        transform.rotation = rot;
+        if (rb == null)
+            rb = GetComponent<Rigidbody>();
+        if (rb != null)
+            rb.rotation = rot;
+    }
 
     void FixedUpdate()
     {

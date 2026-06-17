@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 1441599116933348897}
   - component: {fileID: 1145548470895233285}
   - component: {fileID: 8532631415242862779}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Composite_mental goods
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -525,16 +525,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7043d1cac0a0a54b985010f406ec406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetCamera: {fileID: 0}
-  mode: 0
-  smoothSpeed: 0
-  reverse: 1
-  lockToCameraPlane: 0
-  viewportPosition: {x: 0.5, y: 0.5}
-  distanceFromCamera: 2
-  preserveLocalScaleWhenLocked: 1
+  useScreenSpaceTopLeft: 1
+  hudScreenOffset: {x: 20, y: -20}
+  hudFontSize: 28
+  hudLineSpacing: 6
+  hudLineSize: {x: 420, y: 36}
+  hidePanelBackground: 1
   creditsText: {fileID: 1711705296}
   creditsFormat: credits:{0}
+  comboText: {fileID: 0}
+  comboFormat: Combo x{0}
+  comboBonusFormat: ' (+{0}%)'
+  comboIdleColor: {r: 1, g: 1, b: 1, a: 1}
+  comboActiveColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  comboBonusColor: {r: 0.4, g: 1, b: 0.5, a: 1}
 --- !u!114 &73694709
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -694,6 +698,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   credits: 0
+  comboTierSize: 5
+  comboBonusPercentPerTier: 10
 --- !u!4 &109618176
 Transform:
   m_ObjectHideFlags: 0
@@ -847,6 +853,12 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  crouchKey: 306
+  crouchKeyAlt: 305
+  crouchHeight: 1.1
+  crouchSpeedMultiplier: 0.5
+  crouchTransitionSmoothTime: 0.12
+  standUpClearance: 0.05
 --- !u!54 &147469124
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -988,25 +1000,38 @@ MonoBehaviour:
   holdDistance: 1.8
   minHoldDistance: 0.6
   grabFollowSmoothTime: 0.08
+  summonKey: 102
+  summonMaxDistance: 0
+  summonMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  summonDropDistance: 1.5
+  summonCooldown: 0.4
+  hookOrigin: {fileID: 0}
+  hookMuzzleLocalOffset: {x: 0.35, y: -0.3, z: 0.3}
+  hookLineMaterial: {fileID: 0}
+  hookLineColor: {r: 0.95, g: 0.85, b: 0.55, a: 1}
+  hookLineWidth: 0.02
+  hookFlySpeed: 32
+  hookPullSpeed: 22
+  hookRetractDuration: 0.12
+  hookPassThroughObstacles: 1
+  clampHoldPointAgainstWalls: 1
+  holdCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  holdWallPadding: 0.08
+  holdCollisionSkin: 0.02
   easeToHoldDistance: 0
   holdDistanceEaseSpeed: 2
   grabHoldThreshold: 0.2
   throwForce: 8
   scrollWheelRotatesObject: 1
   rotateSpeed: 360
-  outlineMaterial: {fileID: 0}
-  outlineWidth: 0.03
   defaultOutlineColor: {r: 0, g: 0.17458725, b: 1, a: 1}
-  outlineColorsByCategory:
-  - {r: 0.78, g: 0.82, b: 0.88, a: 1}
-  - {r: 0.35, g: 0.92, b: 0.42, a: 1}
-  - {r: 0.35, g: 0.72, b: 1, a: 1}
-  - {r: 1, g: 0.38, b: 0.22, a: 1}
-  screwDetectDistance: 0.4
-  alignAngleThreshold: 20
-  shakeSpeedThreshold: 120
-  requiredShakeTime: 2
-  shakeGraceTime: 0.5
+  heldOutlineColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  outlineWidthMeters: 0.005
+  decomposableOutlineWidthMeters: 0.012
 --- !u!1001 &150873004
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1342,7 +1367,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -1861,7 +1887,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -5448,10 +5475,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   category: 0
+  complexity: 0
+  creditsOnCorrectThrow: 10
   itemDisplayName: Cone
   itemDescription: "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002"
-  overrideOutlineColor: 0
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &871159286
 GameObject:
   m_ObjectHideFlags: 0
@@ -6948,10 +6975,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   category: 1
+  complexity: 0
+  creditsOnCorrectThrow: 10
   itemDisplayName: Gas
   itemDescription: "\u91D1\u5C5E\u7C7B\u56DE\u6536\u7269\uFF0C\u6295\u5165\u91D1\u5C5E\u901A\u9053\u3002"
-  overrideOutlineColor: 0
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1001 &1138801764
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9444,10 +9471,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   category: 2
+  complexity: 0
+  creditsOnCorrectThrow: 10
   itemDisplayName: SM_Chr_Attach_Headset_01
   itemDescription: utcdikmg
-  overrideOutlineColor: 0
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1001 &1544662959
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10260,7 +10287,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -10820,10 +10848,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   category: 3
+  complexity: 0
+  creditsOnCorrectThrow: 10
   itemDisplayName: SM_Chr_Attach_Helmet_Cat_Male_01
   itemDescription: tgudfikyt
-  overrideOutlineColor: 0
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1001 &1828880441
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -32179,6 +32207,7 @@ MonoBehaviour:
   minImpactSpeed: 1
   consumeItemOnAccept: 1
   debugLogging: 1
+  wrongAislePenalty: -50
 --- !u!64 &9130814493597441834
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -32225,6 +32254,7 @@ MonoBehaviour:
   minImpactSpeed: 1
   consumeItemOnAccept: 1
   debugLogging: 1
+  wrongAislePenalty: -50
 --- !u!64 &9130814493712825622
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -32271,6 +32301,7 @@ MonoBehaviour:
   minImpactSpeed: 1
   consumeItemOnAccept: 1
   debugLogging: 1
+  wrongAislePenalty: -50
 --- !u!64 &9130814494134617535
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -32317,6 +32348,7 @@ MonoBehaviour:
   minImpactSpeed: 1
   consumeItemOnAccept: 1
   debugLogging: 1
+  wrongAislePenalty: -50
 --- !u!64 &9130814495058310825
 MeshCollider:
   m_ObjectHideFlags: 0

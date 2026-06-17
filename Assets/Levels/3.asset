@@ -12,20 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9ea695347c4a964ba875342efa7da2d, type: 3}
   m_Name: 3
   m_EditorClassIdentifier: 
-  levelNumber: 1
-  displayName: day 1
-  levelDurationSeconds: 150
+  levelNumber: 3
+  displayName: day 3
+  levelDurationSeconds: 180
   complexityComposition:
-    basicProbability: 40
-    compositeProbability: 60
-    dangerousProbability: 0
+    basicProbability: 56.6
+    compositeProbability: 40.7
+    dangerousProbability: 34.8
   spawnPrefabs: []
   spawnInterval: 2
   itemsPerBurst: 1
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 40
+  maxActiveItems: 25
   maxTotalItems: 40
   autoStartSpawning: 1
   sceneProps: []
@@ -34,29 +34,29 @@ MonoBehaviour:
     label: 
     prefab: {fileID: 6311291743662715886, guid: 5b9f7a5ecdfa1944098bc1ccb82338ed,
       type: 3}
-    localPosition: {x: -5.8, y: 3, z: 13.5}
-    localEulerAngles: {x: 0, y: 0, z: 0}
+    localPosition: {x: -1429.8501, y: 2.3838203, z: 848.47}
+    localEulerAngles: {x: 0, y: 165.00003, z: 0}
     localScale: {x: 3, y: 3, z: 3}
   - category: 1
     label: 
     prefab: {fileID: 7983567825950029453, guid: 70338ac1f005129429c6d37ec2ed77b5,
       type: 3}
-    localPosition: {x: -1.2600002, y: 3, z: 13.641678}
-    localEulerAngles: {x: 0, y: 0, z: 0}
+    localPosition: {x: -1434.7686, y: 2.3838203, z: 846.6828}
+    localEulerAngles: {x: 0, y: 173.2169, z: 0}
     localScale: {x: 3, y: 3, z: 3}
   - category: 2
     label: 
     prefab: {fileID: 3237057129092650422, guid: 638ef916b1ac5904096b35725dd671d8,
       type: 3}
-    localPosition: {x: 3.6, y: 3, z: 13.641678}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    localScale: {x: 3, y: 3, z: 3}
+    localPosition: {x: -1440.4744, y: 2.3838203, z: 846.7369}
+    localEulerAngles: {x: -0, y: 188.96265, z: 0}
+    localScale: {x: 3.0000005, y: 3, z: 3.0000005}
   - category: 3
     label: 
     prefab: {fileID: 3926130088177694511, guid: 97e8141684233d046907f11bc1b207d8,
       type: 3}
-    localPosition: {x: 7.79, y: 3, z: 13.641678}
-    localEulerAngles: {x: 0, y: 0, z: 0}
+    localPosition: {x: -1445.75, y: 2.3838203, z: 847.97}
+    localEulerAngles: {x: -0, y: 194.99997, z: 0}
     localScale: {x: 3, y: 3, z: 3}
   trashHeapOverrides:
   - heapId: main_heap
@@ -119,30 +119,14 @@ MonoBehaviour:
     - prefab: {fileID: 4241415306051010994, guid: 6ed972a457da1a140bc8ea246074fd14,
         type: 3}
     initialTrashCount: 15
-    allowDuplicates: 0
+    allowDuplicates: 1
     respawnEnabled: 1
     respawnInterval: 5
     respawnPerBurst: 1
     respawnTargetActiveCount: 0
-    maxTotalSpawned: 30
-  interferences:
-  - type: 0
-    triggerAtSeconds: 45
-    durationSeconds: 6
-    intensity: 0.349
-    noiseFps: 0
-    noiseTextureSize: 32
-    tint: {r: 0, g: 0, b: 0, a: 0}
-    centerPatternSprite: {fileID: 0}
-    centerPatternSize: {x: 0, y: 0}
-    centerPatternPulseScale: 0
-    centerPatternPulseFrequencyHz: 0
-    centerPatternColor: {r: 0, g: 0, b: 0, a: 0}
-    cancelKey: 0
-    pressesToCancel: 0
-    flashColor: {r: 0, g: 0, b: 0, a: 0}
-    flashDuration: 0
+    maxTotalSpawned: 25
+  interferences: []
   designNotes: 
   showTutorialBeforeLevel: 1
   tutorialTitle: day 3
-  tutorialBody: "\u8FDB\u5165\u5173\u5361\u4E00\u6BB5\u65F6\u95F4\u540E\uFF0C\u6709\u53EF\u80FD\u4F1A\u51FA\u73B0\u6545\u969C\u6216\u5E72\u6270\uFF0C\u6839\u636E\u6307\u5F15\u89E3\u51B3\u95EE\u9898\u5427\uFF01"
+  tutorialBody: "\u672C\u5173\u7684\u4F20\u9001\u5E26\u91CC\u6DF7\u8FDB\u4E86\u4E00\u4E9B\u4E0D\u5F97\u4E86\u7684\u2018\u5C0F\u60CA\u559C\u2019\u3002\u8FD9\u4E9B\u7279\u6B8A\u9053\u5177\u53EF\u662F\u672C\u7AD9\u65A5\u5DE8\u8D44\uFF08\u5E76\u6CA1\u6709\uFF09\u5F15\u8FDB\u7684\u63D0\u6548\u795E\u5668\uFF0C\u80FD\u5E2E\u4F60\u6210\u500D\u5730\u72C2\u635E\u4FE1\u7528\u70B9\uFF01\u5343\u4E07\u522B\u628A\u5B83\u4EEC\u5F53\u666E\u901A\u5783\u573E\u4E71\u6254\u8FDB\u901A\u9053\uFF01 "

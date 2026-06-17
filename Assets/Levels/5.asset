@@ -1,0 +1,180 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9ea695347c4a964ba875342efa7da2d, type: 3}
+  m_Name: 5
+  m_EditorClassIdentifier: 
+  levelNumber: 5
+  displayName: day 5
+  levelDurationSeconds: 180
+  complexityComposition:
+    basicProbability: 40
+    compositeProbability: 60
+    dangerousProbability: 70
+  spawnPrefabs: []
+  spawnInterval: 2
+  itemsPerBurst: 1
+  spawnSpreadRadius: 0.3
+  burstImpulse: 0
+  burstImpulseRandomness: 0
+  maxActiveItems: 40
+  maxTotalItems: 40
+  autoStartSpawning: 1
+  sceneProps: []
+  aisles:
+  - category: 0
+    label: 
+    prefab: {fileID: 6311291743662715886, guid: 5b9f7a5ecdfa1944098bc1ccb82338ed,
+      type: 3}
+    localPosition: {x: -1429.8501, y: 2.3838203, z: 848.47}
+    localEulerAngles: {x: 0, y: 165.00003, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 1
+    label: 
+    prefab: {fileID: 7983567825950029453, guid: 70338ac1f005129429c6d37ec2ed77b5,
+      type: 3}
+    localPosition: {x: -1434.7686, y: 2.3838203, z: 846.6828}
+    localEulerAngles: {x: 0, y: 173.2169, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  - category: 2
+    label: 
+    prefab: {fileID: 3237057129092650422, guid: 638ef916b1ac5904096b35725dd671d8,
+      type: 3}
+    localPosition: {x: -1440.4744, y: 2.3838203, z: 846.7369}
+    localEulerAngles: {x: -0, y: 188.96265, z: 0}
+    localScale: {x: 3.0000005, y: 3, z: 3.0000005}
+  - category: 3
+    label: 
+    prefab: {fileID: 3926130088177694511, guid: 97e8141684233d046907f11bc1b207d8,
+      type: 3}
+    localPosition: {x: -1445.75, y: 2.3838203, z: 847.97}
+    localEulerAngles: {x: -0, y: 194.99997, z: 0}
+    localScale: {x: 3, y: 3, z: 3}
+  trashHeapOverrides:
+  - heapId: main_heap
+    label: 
+    entries:
+    - prefab: {fileID: 1742078769820402944, guid: ba702c496b69f824885007ee597b534f,
+        type: 3}
+    - prefab: {fileID: 1742078769820402944, guid: a1b65d603f0b1d140bee0ed0b09fee54,
+        type: 3}
+    - prefab: {fileID: 1742078769820402944, guid: e7a39f28f06645e46990cf3686816115,
+        type: 3}
+    - prefab: {fileID: 8555397232593035255, guid: 83f4336a396745549bf1d372ce2dc182,
+        type: 3}
+    - prefab: {fileID: 8555397232593035255, guid: 5b4d1ad407d9abd4997ab1a89ce3abde,
+        type: 3}
+    - prefab: {fileID: 8555397232593035255, guid: 0a79729ed4af2cb489644c78864c8a43,
+        type: 3}
+    - prefab: {fileID: 26042307918521241, guid: 94a92b7abc64bc3489927de1cc85257b,
+        type: 3}
+    - prefab: {fileID: 26042307918521241, guid: ea03c3236528f6344a3f95208103f7ac,
+        type: 3}
+    - prefab: {fileID: 3141784630288663075, guid: be916ee778366344783a4cd67fb5663d,
+        type: 3}
+    - prefab: {fileID: 2901559934276544025, guid: 30042e6265dd1e64d9b9c9677e3fe5ae,
+        type: 3}
+    - prefab: {fileID: 2901559934276544025, guid: ee88de3cb0902c74baf8929fbb9ca272,
+        type: 3}
+    - prefab: {fileID: 2901559934276544025, guid: 01509938fde610f4c898a70694ea765e,
+        type: 3}
+    - prefab: {fileID: 2901559934276544025, guid: f665eef5dd37c8b44b2abd93ae703e4d,
+        type: 3}
+    - prefab: {fileID: 2901559934276544025, guid: 67972d83107cbc84c803d03588a60d4a,
+        type: 3}
+    - prefab: {fileID: 7042810590393507565, guid: a31e7f2f3eb00ca41954797c13fac89e,
+        type: 3}
+    - prefab: {fileID: 173482050102921540, guid: 117cd7f01ade52f46b7d5a6b11e86a75,
+        type: 3}
+    - prefab: {fileID: 3141784630288663075, guid: ab2ac62be3e8f5f409220a299eb5af0d,
+        type: 3}
+    - prefab: {fileID: 3141784630288663075, guid: c2cf1b879a83a3c4b962dfd6c51e2d3a,
+        type: 3}
+    - prefab: {fileID: 3141784630288663075, guid: 43bd9b6b9e653034389c253125345b12,
+        type: 3}
+    - prefab: {fileID: 3141784630288663075, guid: 598ed47b9fd349a4caf44a1dd05fa49a,
+        type: 3}
+    - prefab: {fileID: 3141784630288663075, guid: 8f842ffa80dd2c545a021dfcdbd50882,
+        type: 3}
+    - prefab: {fileID: 3141784630288663075, guid: 41c415ab22c37f740995389b5939aa31,
+        type: 3}
+    - prefab: {fileID: 3141784630288663075, guid: 5f3e5bf14255f4a439a2fe700d8e998e,
+        type: 3}
+    - prefab: {fileID: 7582158137705364761, guid: 439da38e628f4d64eae9b77f734beba6,
+        type: 3}
+    - prefab: {fileID: 4502946916460585891, guid: be75729d733ed00478c958a8b55ce4fb,
+        type: 3}
+    - prefab: {fileID: 9063976208654672054, guid: dee3e2035ffc70744bfb9b2c99bf4197,
+        type: 3}
+    - prefab: {fileID: 3704749408383989885, guid: 1ab114ac450a3b545a7b1186116d92fa,
+        type: 3}
+    - prefab: {fileID: 4241415306051010994, guid: 6ed972a457da1a140bc8ea246074fd14,
+        type: 3}
+    initialTrashCount: 20
+    allowDuplicates: 1
+    respawnEnabled: 1
+    respawnInterval: 3
+    respawnPerBurst: 1
+    respawnTargetActiveCount: 0
+    maxTotalSpawned: 999
+  interferences:
+  - type: 0
+    triggerAtSeconds: 45
+    durationSeconds: 10
+    intensity: 0.45
+    noiseFps: 24
+    noiseTextureSize: 256
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    centerPatternSprite: {fileID: 0}
+    centerPatternSize: {x: 220, y: 220}
+    centerPatternPulseScale: 1.25
+    centerPatternPulseFrequencyHz: 2
+    centerPatternColor: {r: 1, g: 1, b: 1, a: 1}
+    cancelKey: 101
+    pressesToCancel: 10
+    flashColor: {r: 1, g: 0, b: 0, a: 1}
+    flashDuration: 0.18
+  - type: 0
+    triggerAtSeconds: 100
+    durationSeconds: 10
+    intensity: 0.45
+    noiseFps: 24
+    noiseTextureSize: 256
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    centerPatternSprite: {fileID: 0}
+    centerPatternSize: {x: 220, y: 220}
+    centerPatternPulseScale: 1.25
+    centerPatternPulseFrequencyHz: 2
+    centerPatternColor: {r: 1, g: 1, b: 1, a: 1}
+    cancelKey: 101
+    pressesToCancel: 10
+    flashColor: {r: 1, g: 0, b: 0, a: 1}
+    flashDuration: 0.18
+  - type: 0
+    triggerAtSeconds: 170
+    durationSeconds: 10
+    intensity: 0.45
+    noiseFps: 24
+    noiseTextureSize: 256
+    tint: {r: 1, g: 1, b: 1, a: 1}
+    centerPatternSprite: {fileID: 0}
+    centerPatternSize: {x: 220, y: 220}
+    centerPatternPulseScale: 1.25
+    centerPatternPulseFrequencyHz: 2
+    centerPatternColor: {r: 1, g: 1, b: 1, a: 1}
+    cancelKey: 101
+    pressesToCancel: 10
+    flashColor: {r: 1, g: 0, b: 0, a: 1}
+    flashDuration: 0.18
+  designNotes: 
+  showTutorialBeforeLevel: 1
+  tutorialTitle: day 5
+  tutorialBody: "\u4F60\u7684\u5783\u573E\u5806\u5C06\u65E0\u7A77\u65E0\u5C3D\u5730\u4EA7\u751F\u65B0\u7684\u5783\u573E\uFF0C\u4EAB\u53D7\u8FD9\u4E00\u5929\u5427\uFF01"

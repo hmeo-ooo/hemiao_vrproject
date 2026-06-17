@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -217,6 +217,7 @@ public class ItemSpawner : MonoBehaviour
         EnsureItemInformation(instance, prefab);
         EnsurePhysics(instance);
         ApplyBurstImpulse(instance);
+        Hemiao.Rendering.ItemOutlineSystem.Register(instance);
 
         _activeItems.Add(instance);
         _totalSpawnedCount++;
@@ -285,7 +286,7 @@ public class ItemSpawner : MonoBehaviour
     }
 
     /// <summary>
-    /// 将撕扯/切割后独立在场的物品初始化成与 Spawner 生成物相同的状态（物理 + 按 category 描边）。
+    /// 将撕扯/切割后独立在场的物品初始化成与 Spawner 生成物相同的状态（物理）。
     /// </summary>
     public static void FinalizeLooseItem(GameObject instance)
     {
@@ -308,6 +309,8 @@ public class ItemSpawner : MonoBehaviour
         rb.detectCollisions = true;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
+        SanitizeOversizedConvexMeshColliders(instance);
+
         if (instance.GetComponentInChildren<Collider>() != null)
             return;
 
@@ -323,6 +326,58 @@ public class ItemSpawner : MonoBehaviour
             bounds.size.y / Mathf.Max(Mathf.Abs(lossy.y), 0.001f),
             bounds.size.z / Mathf.Max(Mathf.Abs(lossy.z), 0.001f));
     }
+
+    /// <summary>
+    /// 部分导入网格（如 Gas.fbx）面数超过 Unity 凸包上限 256，会生成残缺碰撞体并刷警告。
+    /// 遇到这类已知网格时，改为按 Renderer 包围盒生成简单碰撞体。
+    /// </summary>
+    static void SanitizeOversizedConvexMeshColliders(GameObject instance)
+    {
+        var meshColliders = instance.GetComponentsInChildren<MeshCollider>(true);
+        for (int i = 0; i < meshColliders.Length; i++)
+        {
+            MeshCollider mc = meshColliders[i];
+            if (mc == null || !mc.convex || mc.sharedMesh == null) continue;
+            if (!IsKnownOversizedConvexMesh(mc.sharedMesh)) continue;
+
+            Renderer renderer = mc.GetComponent<Renderer>();
+            GameObject go = mc.gameObject;
+            string meshName = mc.sharedMesh.name;
+            Object.Destroy(mc);
+
+            if (renderer == null)
+            {
+                go.AddComponent<BoxCollider>();
+                continue;
+            }
+
+            Bounds bounds = renderer.bounds;
+            Vector3 center = go.transform.InverseTransformPoint(bounds.center);
+            Vector3 lossy = go.transform.lossyScale;
+            Vector3 size = new Vector3(
+                bounds.size.x / Mathf.Max(Mathf.Abs(lossy.x), 0.001f),
+                bounds.size.y / Mathf.Max(Mathf.Abs(lossy.y), 0.001f),
+                bounds.size.z / Mathf.Max(Mathf.Abs(lossy.z), 0.001f));
+
+            // 气瓶类圆柱网格优先用 CapsuleCollider。
+            if (meshName == "Gas")
+            {
+                var capsule = go.AddComponent<CapsuleCollider>();
+                capsule.direction = 1;
+                capsule.center = center;
+                capsule.height = Mathf.Max(size.y, 0.01f);
+                capsule.radius = Mathf.Max(size.x, size.z) * 0.5f;
+                continue;
+            }
+
+            var box = go.AddComponent<BoxCollider>();
+            box.center = center;
+            box.size = size;
+        }
+    }
+
+    static bool IsKnownOversizedConvexMesh(Mesh mesh) =>
+        mesh != null && mesh.name == "Gas";
 
     private void ApplyBurstImpulse(GameObject instance)
     {

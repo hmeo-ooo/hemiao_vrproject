@@ -40,6 +40,15 @@ public class LevelHubUI : MonoBehaviour
     public string selectLevelTitle = "Select Day";
     public string selectLevelBackLabel = "Back";
 
+    [Header("Hub 按钮样式")]
+    public Color hubButtonColor = new Color(1f, 1f, 1f, 0.3f);
+    public Vector2 hubMainButtonSize = new Vector2(240f, 52f);
+
+    [Header("关卡选择按钮样式")]
+    public Vector2 levelSelectButtonSize = new Vector2(150f, 72f);
+    public float levelSelectBackButtonWidth = 160f;
+    public float levelSelectBackButtonHeight = 52f;
+
     Canvas _overlayCanvas;
     LevelSessionController _session;
     readonly System.Collections.Generic.List<Button> _levelButtons = new System.Collections.Generic.List<Button>();
@@ -129,7 +138,6 @@ public class LevelHubUI : MonoBehaviour
         LevelManager lm = LevelManager.Instance;
         if (lm == null) return;
 
-        int current = lm.CurrentLevelIndex;
         TMP_FontAsset font = ResolveHubFont();
 
         for (int i = 0; i < lm.LevelCount; i++)
@@ -138,19 +146,12 @@ public class LevelHubUI : MonoBehaviour
             string label = BuildLevelButtonLabel(def, i);
 
             int captured = i;
-            Button btn = CreateButton(levelSelectGrid, label);
+            Button btn = CreateLevelSelectButton(levelSelectGrid, label);
             ApplyFontToButton(btn, font);
 
             Image img = btn.GetComponent<Image>();
             if (img != null)
-            {
-                if (def == null)
-                    img.color = new Color(0.3f, 0.3f, 0.3f, 1f);
-                else if (i == current)
-                    img.color = new Color(0.25f, 0.7f, 0.4f, 1f);
-                else
-                    img.color = new Color(0.2f, 0.45f, 0.75f, 1f);
-            }
+                ApplyHubButtonColor(img, def == null);
 
             btn.interactable = def != null;
             btn.onClick.RemoveAllListeners();
@@ -203,6 +204,7 @@ public class LevelHubUI : MonoBehaviour
             _overlayCanvas.enabled = true;
 
         Refresh();
+        ApplyAllButtonStyles();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
@@ -228,6 +230,22 @@ public class LevelHubUI : MonoBehaviour
             levelSelectPanel.SetActive(false);
         if (_overlayCanvas != null)
             _overlayCanvas.enabled = false;
+    }
+
+    void OnDestroy()
+    {
+        RuntimeUiUtility.DestroyCanvas(ref _overlayCanvas);
+        panelRoot = null;
+        levelSelectPanel = null;
+        levelSelectGrid = null;
+        levelText = null;
+        creditsText = null;
+        debtText = null;
+        statusText = null;
+        enterLevelButton = null;
+        repayDebtButton = null;
+        selectLevelButton = null;
+        levelSelectBackButton = null;
     }
 
     public void SetStatus(string message)
@@ -256,6 +274,7 @@ public class LevelHubUI : MonoBehaviour
         {
             bool canRepay = debt > 0 && credits > 0 && CreditManager.Instance != null;
             repayDebtButton.interactable = canRepay;
+            ApplyHubButtonColor(repayDebtButton.GetComponent<Image>(), !canRepay);
         }
     }
 
@@ -292,7 +311,7 @@ public class LevelHubUI : MonoBehaviour
     void BuildRuntimeUi()
     {
         var canvasGo = new GameObject("LevelHubCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        canvasGo.transform.SetParent(transform, false);
+        canvasGo.transform.SetParent(null, false);
 
         _overlayCanvas = canvasGo.GetComponent<Canvas>();
         _overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -311,7 +330,7 @@ public class LevelHubUI : MonoBehaviour
         vLayout.padding = new RectOffset(48, 48, 48, 48);
         vLayout.childControlWidth = true;
         vLayout.childControlHeight = true;
-        vLayout.childForceExpandWidth = true;
+        vLayout.childForceExpandWidth = false;
         vLayout.childForceExpandHeight = false;
 
         levelText = CreateTmp(panelRoot.transform, 36, FontStyles.Bold);
@@ -320,12 +339,14 @@ public class LevelHubUI : MonoBehaviour
         statusText = CreateTmp(panelRoot.transform, 22, FontStyles.Italic);
         statusText.color = new Color(1f, 0.85f, 0.4f);
 
-        enterLevelButton = CreateButton(panelRoot.transform, enterButtonLabel);
-        selectLevelButton = CreateButton(panelRoot.transform, selectLevelButtonLabel);
-        repayDebtButton = CreateButton(panelRoot.transform, repayButtonLabel);
+        enterLevelButton = CreateHubButton(panelRoot.transform, enterButtonLabel, hubMainButtonSize);
+        selectLevelButton = CreateHubButton(panelRoot.transform, selectLevelButtonLabel, hubMainButtonSize);
+        repayDebtButton = CreateHubButton(panelRoot.transform, repayButtonLabel, hubMainButtonSize);
 
         BuildLevelSelectPanel(canvasGo.transform);
         ApplyHubFont();
+        ApplyAllButtonStyles();
+        RuntimeUiUtility.MarkPlayModeOnly(canvasGo);
     }
 
     void BuildLevelSelectPanel(Transform canvasRoot)
@@ -344,7 +365,7 @@ public class LevelHubUI : MonoBehaviour
         vLayout.padding = new RectOffset(64, 64, 64, 64);
         vLayout.childControlWidth = true;
         vLayout.childControlHeight = true;
-        vLayout.childForceExpandWidth = true;
+        vLayout.childForceExpandWidth = false;
         vLayout.childForceExpandHeight = false;
 
         TMP_Text title = CreateTmp(levelSelectPanel.transform, 42, FontStyles.Bold);
@@ -354,18 +375,64 @@ public class LevelHubUI : MonoBehaviour
         gridGo.transform.SetParent(levelSelectPanel.transform, false);
 
         var gridLe = gridGo.AddComponent<LayoutElement>();
-        gridLe.minHeight = 360;
-        gridLe.preferredHeight = 480;
+        gridLe.minHeight = 300;
+        gridLe.preferredHeight = 400;
 
         var grid = gridGo.AddComponent<GridLayoutGroup>();
-        grid.cellSize = new Vector2(220, 90);
-        grid.spacing = new Vector2(16, 16);
+        grid.cellSize = levelSelectButtonSize;
+        grid.spacing = new Vector2(12, 12);
         grid.childAlignment = TextAnchor.MiddleCenter;
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = 5;
         levelSelectGrid = gridGo.transform;
 
-        levelSelectBackButton = CreateButton(levelSelectPanel.transform, selectLevelBackLabel);
+        levelSelectBackButton = CreateLevelSelectButton(levelSelectPanel.transform, selectLevelBackLabel);
+        var backLe = levelSelectBackButton.GetComponent<LayoutElement>();
+        if (backLe != null)
+        {
+            backLe.preferredWidth = levelSelectBackButtonWidth;
+            backLe.minWidth = levelSelectBackButtonWidth;
+            backLe.preferredHeight = levelSelectBackButtonHeight;
+            backLe.minHeight = levelSelectBackButtonHeight;
+        }
+
+        Image backImg = levelSelectBackButton.GetComponent<Image>();
+        if (backImg != null)
+            ApplyHubButtonColor(backImg, false);
+    }
+
+    void ApplyAllButtonStyles()
+    {
+        StyleHubButton(enterLevelButton, hubMainButtonSize);
+        StyleHubButton(selectLevelButton, hubMainButtonSize);
+        StyleHubButton(repayDebtButton, hubMainButtonSize, treatAsDisabled: repayDebtButton != null && !repayDebtButton.interactable);
+
+        if (levelSelectBackButton != null)
+        {
+            var backLe = levelSelectBackButton.GetComponent<LayoutElement>();
+            if (backLe != null)
+            {
+                backLe.preferredWidth = levelSelectBackButtonWidth;
+                backLe.minWidth = levelSelectBackButtonWidth;
+                backLe.preferredHeight = levelSelectBackButtonHeight;
+                backLe.minHeight = levelSelectBackButtonHeight;
+            }
+            ApplyHubButtonColor(levelSelectBackButton.GetComponent<Image>(), false);
+        }
+    }
+
+    void StyleHubButton(Button btn, Vector2 size, bool treatAsDisabled = false)
+    {
+        if (btn == null) return;
+
+        var le = btn.GetComponent<LayoutElement>();
+        if (le == null) le = btn.gameObject.AddComponent<LayoutElement>();
+        le.preferredWidth = size.x;
+        le.minWidth = size.x;
+        le.preferredHeight = size.y;
+        le.minHeight = size.y;
+
+        ApplyHubButtonColor(btn.GetComponent<Image>(), treatAsDisabled);
     }
 
     void ApplyHubFont()
@@ -455,13 +522,10 @@ public class LevelHubUI : MonoBehaviour
         le.preferredHeight = 56;
 
         var img = go.GetComponent<Image>();
-        img.color = new Color(0.2f, 0.45f, 0.75f, 1f);
+        img.color = Color.white;
 
         var btn = go.GetComponent<Button>();
-        var colors = btn.colors;
-        colors.highlightedColor = new Color(0.35f, 0.6f, 0.9f);
-        colors.pressedColor = new Color(0.15f, 0.35f, 0.6f);
-        btn.colors = colors;
+        btn.transition = Selectable.Transition.ColorTint;
 
         var textGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
         textGo.transform.SetParent(go.transform, false);
@@ -479,5 +543,43 @@ public class LevelHubUI : MonoBehaviour
         tmp.raycastTarget = false;
 
         return btn;
+    }
+
+    Button CreateHubButton(Transform parent, string label, Vector2 size)
+    {
+        Button btn = CreateButton(parent, label);
+        StyleHubButton(btn, size);
+        return btn;
+    }
+
+    Button CreateLevelSelectButton(Transform parent, string label)
+    {
+        Button btn = CreateButton(parent, label);
+        StyleHubButton(btn, levelSelectButtonSize);
+        return btn;
+    }
+
+    void ApplyHubButtonColor(Image img, bool faded)
+    {
+        if (img == null) return;
+
+        Color fill = faded
+            ? new Color(1f, 1f, 1f, 0.12f)
+            : hubButtonColor;
+
+        // ColorTint 会与 Image.color 相乘，因此底图保持白色，颜色只写在 Button 色块里。
+        img.color = Color.white;
+
+        Button btn = img.GetComponent<Button>();
+        if (btn == null) return;
+
+        float alpha = fill.a;
+        var colors = btn.colors;
+        colors.normalColor = fill;
+        colors.highlightedColor = new Color(1f, 1f, 1f, Mathf.Min(1f, alpha + 0.15f));
+        colors.pressedColor = new Color(1f, 1f, 1f, Mathf.Max(0.1f, alpha - 0.1f));
+        colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = new Color(1f, 1f, 1f, 0.12f);
+        btn.colors = colors;
     }
 }

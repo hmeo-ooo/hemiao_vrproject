@@ -1,5 +1,7 @@
-﻿using System;
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using Hemiao.Rendering;
 using UnityEngine;
 
 public class CharacterInteraction : MonoBehaviour
@@ -25,6 +27,64 @@ public class CharacterInteraction : MonoBehaviour
     [Tooltip("\u6293\u53D6\u540E\u8DDF\u968F\u6301\u63E1\u70B9\u7684\u5E73\u6ED1\u65F6\u95F4\uFF0C\u8D8A\u5C0F\u8D8A\u8DDF\u624B\uFF0C\u8D8A\u5927\u8D8A\u67D4\u548C\u3002")]
     public float grabFollowSmoothTime = 0.08f;
 
+    [Header("远程召唤 - 钩爪")]
+    [Tooltip("准星对准物体后按下此键，发射钩爪把物体勾回到玩家身前。")]
+    public KeyCode summonKey = KeyCode.F;
+
+    [Tooltip("钩爪射线最大距离（米）。<=0 表示无限远。")]
+    public float summonMaxDistance = 0f;
+
+    [Tooltip("钩爪射线检测的 LayerMask。")]
+    public LayerMask summonMask = ~0;
+
+    [Tooltip("被勾回的物体最终落在相机前方多远处（米）。")]
+    public float summonDropDistance = 1.5f;
+
+    [Tooltip("两次发射之间的最小冷却时间（秒）。0 = 无冷却。")]
+    public float summonCooldown = 0.4f;
+
+    [Header("钩爪外观")]
+    [Tooltip("钩爪发射起点。留空时使用相机本地空间下的 hookMuzzleLocalOffset 计算。")]
+    public Transform hookOrigin;
+
+    [Tooltip("hookOrigin 为空时使用：相机本地空间下的发射点偏移（默认右下伸出）。")]
+    public Vector3 hookMuzzleLocalOffset = new Vector3(0.35f, -0.3f, 0.3f);
+
+    [Tooltip("线缆材质。留空则运行时自动创建 Unlit 材质。")]
+    public Material hookLineMaterial;
+
+    [Tooltip("线缆颜色（含 Alpha）。")]
+    public Color hookLineColor = new Color(0.95f, 0.85f, 0.55f, 1f);
+
+    [Tooltip("线缆宽度（米）。")]
+    public float hookLineWidth = 0.02f;
+
+    [Header("钩爪时序")]
+    [Tooltip("钩爪飞出速度（米/秒）。")]
+    public float hookFlySpeed = 32f;
+
+    [Tooltip("钩住物体后的回拉速度（米/秒）。")]
+    public float hookPullSpeed = 22f;
+
+    [Tooltip("线缆收回的时长（秒）。")]
+    public float hookRetractDuration = 0.12f;
+
+    [Tooltip("回拉过程中暂时关闭物体碰撞，让其穿越中途障碍。")]
+    public bool hookPassThroughObstacles = true;
+
+    [Header("持物碰撞")]
+    [Tooltip("持物时从相机向前做射线检测，避免 HoldPoint 落入墙/地内部。")]
+    public bool clampHoldPointAgainstWalls = true;
+
+    [Tooltip("持物碰撞检测使用的 LayerMask。")]
+    public LayerMask holdCollisionMask = ~0;
+
+    [Tooltip("HoldPoint 与墙面/地面保持的最小间距（米）。")]
+    public float holdWallPadding = 0.08f;
+
+    [Tooltip("移动 Sweep 与推出重叠时预留的皮肤宽度（米）。")]
+    public float holdCollisionSkin = 0.02f;
+
     [Tooltip("\u6293\u53D6\u540E\u662F\u5426\u7F13\u6162\u6536\u62DB\u5230 holdDistance\u3002")]
     public bool easeToHoldDistance = false;
 
@@ -49,28 +109,18 @@ public class CharacterInteraction : MonoBehaviour
     public event Action Thrown;
     public event Action<float> ScrollWheel;
 
-    [Header("\u7269\u54C1\u63CF\u8FB9")]
-    [Tooltip("\u63CF\u8FB9\u6750\u8D28\uFF08Hemiao/ItemOutline\uFF09\u3002\u7559\u7A7A\u5219\u8FD0\u884C\u65F6\u81EA\u52A8\u67E5\u627E\u3002")]
-    public Material outlineMaterial;
-
-    [Tooltip("\u63CF\u8FB9\u5BBD\u5EA6\uFF08\u5C4F\u5E55\u7A7A\u95F4\uFF09\u3002")]
-    public float outlineWidth = 0.02f;
-
-    [Tooltip("挂有 ItemInformation 的物品使用的描边颜色（全场常亮，与距离无关）。" +
-             "无 ItemInformation 的可交互物体（如螺丝刀、刀）在 maxGrabDistance 内也使用此颜色。")]
+    [Header("物品描边")]
+    [Tooltip("可交互物品默认描边颜色（白）。")]
     public Color defaultOutlineColor = Color.white;
 
-    [Tooltip("玩家抓住物品时的描边颜色。")]
+    [Tooltip("玩家抓取物品时的高亮描边颜色（黄）。")]
     public Color heldOutlineColor = new Color(1f, 0.85f, 0.1f, 1f);
 
-    [Tooltip("\u6309 ItemCategory\uFF1AMetal, OrganicMatter, CoreEnergy, DangerousGoods")]
-    public Color[] outlineColorsByCategory = new Color[]
-    {
-        new Color(0.78f, 0.82f, 0.88f),
-        new Color(0.35f, 0.92f, 0.42f),
-        new Color(0.35f, 0.72f, 1f),
-        new Color(1f, 0.38f, 0.22f),
-    };
+    [Tooltip("描边宽度（世界空间米，0.005 ≈ 5mm）。")]
+    [Range(0f, 0.05f)] public float outlineWidthMeters = 0.005f;
+
+    [Tooltip("能拆解物品（Composite / Cuttable / 含 Screw 子件）的加粗描边宽度（米）。")]
+    [Range(0f, 0.05f)] public float decomposableOutlineWidthMeters = 0.012f;
 
     Transform holdPoint;
     GameObject grabbedObject;
@@ -91,10 +141,13 @@ public class CharacterInteraction : MonoBehaviour
     float currentHoldDistance;
     Vector3 grabLocalOffset;
     Vector3 grabFollowVelocity;
+    float _lastSummonTime = -999f;
 
-    readonly List<GameObject> activeOutlines = new List<GameObject>();
-    readonly HashSet<GameObject> outlinedRoots = new HashSet<GameObject>();
-    GameObject heldOutlineRoot;
+    Coroutine _hookRoutine;
+    LineRenderer _hookLine;
+    bool _hookActive;
+
+    readonly List<(Collider held, Collider player)> _ignoredPlayerCollisions = new List<(Collider, Collider)>();
 
     ItemInfoWorldUI itemInfoUI;
 
@@ -117,23 +170,48 @@ public class CharacterInteraction : MonoBehaviour
             holdPoint.SetParent(cameraTransform, false);
         holdPoint.localPosition = Vector3.forward * holdDistance;
         holdPoint.localRotation = Quaternion.identity;
+
+        if (LevelManager.Instance != null)
+            LevelManager.Instance.LevelGameplayStarted += OnLevelGameplayStarted;
+
+        ItemOutlineSystem.DefaultColor            = defaultOutlineColor;
+        ItemOutlineSystem.HeldColor               = heldOutlineColor;
+        ItemOutlineSystem.DefaultWidthMeters      = outlineWidthMeters;
+        ItemOutlineSystem.DecomposableWidthMeters = decomposableOutlineWidthMeters;
+        ItemOutlineSystem.ScanScene();
+
+        Grabbed  += OnGrabbedForOutline;
+        Released += OnReleasedForOutline;
+        Thrown   += OnReleasedForOutline;
     }
+
+    void OnGrabbedForOutline(GameObject go) => ItemOutlineSystem.SetHeld(go);
+    void OnReleasedForOutline()            => ItemOutlineSystem.ClearHeld();
 
     void Update()
     {
-        if (GameplayInputGate.IsBlocked) return;
         if (cameraTransform == null) return;
 
-        UpdateHoldPointDistance();
-        UpdateAimTarget();
-        RefreshInteractionVisuals();
-        HandleLeftPressLogic();
-        HandleThrow();
-        HandleScrollRotate();
-        HandleInspectionInput();
+        if (!GameplayInputGate.IsBlocked)
+        {
+            UpdateHoldPointDistance();
+            UpdateAimTarget();
+            HandleLeftPressLogic();
+            HandleThrow();
+            HandleScrollRotate();
+            HandleInspectionInput();
+            HandleSummonInput();
+        }
+
+        RefreshItemInfoUI();
     }
 
-    /// <summary>审视结束等时机立即刷新描边（审视期间 Update 被门控跳过）。</summary>
+    void OnLevelGameplayStarted()
+    {
+        ForceRefreshInteractionVisuals();
+    }
+
+    /// <summary>审视结束等时机立即刷新交互视觉（审视期间 Update 被门控跳过）。</summary>
     public void ForceRefreshInteractionVisuals()
     {
         if (cameraTransform == null) return;
@@ -143,6 +221,7 @@ public class CharacterInteraction : MonoBehaviour
 
     void HandleInspectionInput()
     {
+        if (_hookActive) return;
         if (grabbedObject == null) return;
         var insp = grabbedObject.GetComponent<InspectableItem>();
         if (insp == null) return;
@@ -157,6 +236,7 @@ public class CharacterInteraction : MonoBehaviour
     void FixedUpdate()
     {
         if (GameplayInputGate.IsBlocked) return;
+        if (_hookActive) return; // 钩爪 coroutine 接管 grabbedRb 的位置
         if (grabbedRb == null || holdPoint == null) return;
         UpdateGrabbedTransformPhysics();
     }
@@ -181,7 +261,47 @@ public class CharacterInteraction : MonoBehaviour
         }
 
         currentHoldDistance = Mathf.Clamp(currentHoldDistance, minHoldDistance, maxGrabDistance);
-        holdPoint.localPosition = Vector3.forward * currentHoldDistance;
+
+        float holdDistanceForPoint = currentHoldDistance;
+        if (grabbedObject != null && clampHoldPointAgainstWalls)
+            holdDistanceForPoint = ClampHoldDistanceAgainstGeometry(currentHoldDistance);
+
+        holdPoint.localPosition = Vector3.forward * holdDistanceForPoint;
+    }
+
+    float ClampHoldDistanceAgainstGeometry(float desiredDistance)
+    {
+        if (cameraTransform == null) return desiredDistance;
+
+        Vector3 origin = cameraTransform.position;
+        Vector3 dir = cameraTransform.forward;
+        RaycastHit[] hits = Physics.RaycastAll(
+            origin,
+            dir,
+            desiredDistance,
+            holdCollisionMask,
+            QueryTriggerInteraction.Ignore);
+
+        float closest = desiredDistance;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider col = hits[i].collider;
+            if (col == null || IsHeldCollider(col)) continue;
+
+            closest = Mathf.Min(closest, hits[i].distance);
+        }
+
+        if (closest < desiredDistance)
+            return Mathf.Max(minHoldDistance, closest - holdWallPadding);
+
+        return desiredDistance;
+    }
+
+    bool IsHeldCollider(Collider col)
+    {
+        if (col == null || grabbedObject == null) return false;
+        Transform t = col.transform;
+        return t == grabbedObject.transform || t.IsChildOf(grabbedObject.transform);
     }
 
     /// <summary>
@@ -191,7 +311,12 @@ public class CharacterInteraction : MonoBehaviour
     {
         if (holdPoint == null) return;
         currentHoldDistance = Mathf.Clamp(currentHoldDistance + delta, minHoldDistance, maxGrabDistance);
-        holdPoint.localPosition = Vector3.forward * currentHoldDistance;
+
+        float holdDistanceForPoint = currentHoldDistance;
+        if (grabbedObject != null && clampHoldPointAgainstWalls)
+            holdDistanceForPoint = ClampHoldDistanceAgainstGeometry(currentHoldDistance);
+
+        holdPoint.localPosition = Vector3.forward * holdDistanceForPoint;
     }
 
     void UpdateGrabbedTransformPhysics()
@@ -213,9 +338,134 @@ public class CharacterInteraction : MonoBehaviour
             targetRot = Quaternion.Slerp(grabbedRb.rotation, targetRot, rotLerp);
         }
 
-        grabbedRb.MovePosition(targetPos);
+        Vector3 safePos = ComputeSweptHeldPosition(grabbedRb, targetPos);
+        grabbedRb.MovePosition(safePos);
         grabbedRb.MoveRotation(targetRot);
+        ResolveRigidbodyPenetration(grabbedRb);
+
+        grabbedRb.velocity = Vector3.zero;
+        grabbedRb.angularVelocity = Vector3.zero;
     }
+
+    Vector3 ComputeSweptHeldPosition(Rigidbody rb, Vector3 targetPos)
+    {
+        Vector3 start = rb.position;
+        Vector3 delta = targetPos - start;
+        float distance = delta.magnitude;
+        if (distance <= 1e-6f) return targetPos;
+
+        Vector3 dir = delta / distance;
+        float allowedDistance = distance;
+
+        Collider[] ownColliders = rb.GetComponentsInChildren<Collider>(false);
+        bool hasSolidCollider = false;
+        for (int i = 0; i < ownColliders.Length; i++)
+        {
+            if (!TryGetColliderSweepDistance(ownColliders[i], dir, distance, out float colliderAllowed))
+                continue;
+
+            hasSolidCollider = true;
+            allowedDistance = Mathf.Min(allowedDistance, colliderAllowed);
+        }
+
+        if (!hasSolidCollider
+            && rb.SweepTest(dir, out RaycastHit sweepHit, distance, QueryTriggerInteraction.Ignore)
+            && !IsHeldCollider(sweepHit.collider))
+        {
+            allowedDistance = Mathf.Min(allowedDistance, sweepHit.distance);
+        }
+
+        allowedDistance = Mathf.Max(0f, allowedDistance - holdCollisionSkin);
+        return start + dir * allowedDistance;
+    }
+
+    bool TryGetColliderSweepDistance(Collider col, Vector3 dir, float maxDistance, out float allowedDistance)
+    {
+        allowedDistance = maxDistance;
+        if (col == null || !col.enabled || col.isTrigger) return false;
+
+        QueryTriggerInteraction triggerQuery = QueryTriggerInteraction.Ignore;
+
+        switch (col)
+        {
+            case SphereCollider sphere:
+            {
+                Transform t = sphere.transform;
+                Vector3 center = t.TransformPoint(sphere.center);
+                float radius = sphere.radius * GetMaxAbsComponent(t.lossyScale);
+                if (Physics.SphereCast(center, radius, dir, out RaycastHit hit, maxDistance, holdCollisionMask, triggerQuery)
+                    && !IsHeldCollider(hit.collider))
+                {
+                    allowedDistance = hit.distance;
+                }
+                return true;
+            }
+            case CapsuleCollider capsule:
+            {
+                if (TryGetCapsuleWorld(capsule, out Vector3 p1, out Vector3 p2, out float radius)
+                    && Physics.CapsuleCast(p1, p2, radius, dir, out RaycastHit hit, maxDistance, holdCollisionMask, triggerQuery)
+                    && !IsHeldCollider(hit.collider))
+                {
+                    allowedDistance = hit.distance;
+                }
+                return true;
+            }
+            case BoxCollider box:
+            {
+                Transform t = box.transform;
+                Vector3 center = t.TransformPoint(box.center);
+                Vector3 halfExtents = Vector3.Scale(box.size * 0.5f, t.lossyScale);
+                if (Physics.BoxCast(center, halfExtents, dir, out RaycastHit hit, t.rotation, maxDistance, holdCollisionMask, triggerQuery)
+                    && !IsHeldCollider(hit.collider))
+                {
+                    allowedDistance = hit.distance;
+                }
+                return true;
+            }
+            default:
+            {
+                Bounds bounds = col.bounds;
+                Vector3 extents = bounds.extents;
+                if (extents.sqrMagnitude <= 1e-8f) return false;
+
+                if (Physics.BoxCast(bounds.center, extents, dir, out RaycastHit hit, col.transform.rotation, maxDistance, holdCollisionMask, triggerQuery)
+                    && !IsHeldCollider(hit.collider))
+                {
+                    allowedDistance = hit.distance;
+                }
+                return true;
+            }
+        }
+    }
+
+    static bool TryGetCapsuleWorld(CapsuleCollider capsule, out Vector3 point1, out Vector3 point2, out float radius)
+    {
+        point1 = point2 = Vector3.zero;
+        radius = 0f;
+        if (capsule == null) return false;
+
+        Transform t = capsule.transform;
+        float scale = GetMaxAbsComponent(t.lossyScale);
+        radius = capsule.radius * scale;
+        float height = Mathf.Max(capsule.height * scale, radius * 2f);
+        float halfHeight = Mathf.Max(0f, height * 0.5f - radius);
+
+        Vector3 localDir = capsule.direction switch
+        {
+            0 => Vector3.right,
+            2 => Vector3.forward,
+            _ => Vector3.up,
+        };
+
+        Vector3 worldDir = t.TransformDirection(localDir).normalized;
+        Vector3 center = t.TransformPoint(capsule.center);
+        point1 = center - worldDir * halfHeight;
+        point2 = center + worldDir * halfHeight;
+        return true;
+    }
+
+    static float GetMaxAbsComponent(Vector3 v) =>
+        Mathf.Max(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
 
     void UpdateAimTarget()
     {
@@ -243,30 +493,11 @@ public class CharacterInteraction : MonoBehaviour
 
     void RefreshInteractionVisuals()
     {
-        HashSet<GameObject> wantOutline = new HashSet<GameObject>();
+        RefreshItemInfoUI();
+    }
 
-        var itemsInRange = CollectOutlineTargets();
-        for (int i = 0; i < itemsInRange.Count; i++)
-        {
-            GameObject item = itemsInRange[i];
-            if (item == null || item == aimedObject || item == grabbedObject) continue;
-            wantOutline.Add(item);
-        }
-
-        var toRemove = new List<GameObject>();
-        foreach (GameObject root in outlinedRoots)
-        {
-            if (root == null || !wantOutline.Contains(root))
-                toRemove.Add(root);
-        }
-        for (int i = 0; i < toRemove.Count; i++)
-            RemoveOutline(toRemove[i]);
-
-        foreach (GameObject root in wantOutline)
-            EnsureOutline(root);
-
-        UpdateHeldOutline();
-
+    void RefreshItemInfoUI()
+    {
         if (itemInfoUI == null) return;
 
         if (aimedObject != null && grabbedObject == null)
@@ -282,63 +513,6 @@ public class CharacterInteraction : MonoBehaviour
         else
         {
             itemInfoUI.Hide();
-        }
-    }
-
-    /// <summary>
-    /// 收集需要显示描边的可交互根物体：
-    /// ItemInformation 物品全场常亮；其他工具仍受 maxGrabDistance 限制。
-    /// </summary>
-    List<GameObject> CollectOutlineTargets()
-    {
-        var results = new List<GameObject>();
-        var seen = new HashSet<int>();
-
-        CollectAllItemInformationRoots(seen, results);
-
-        if (cameraTransform != null)
-        {
-            float maxDistSqr = maxGrabDistance * maxGrabDistance;
-            Vector3 camPos = cameraTransform.position;
-            CollectToolRootsInRange<Screwdriver>(camPos, maxDistSqr, seen, results);
-            CollectToolRootsInRange<Knife>(camPos, maxDistSqr, seen, results);
-        }
-
-        return results;
-    }
-
-    static void CollectAllItemInformationRoots(HashSet<int> seen, List<GameObject> results)
-    {
-        ItemInformation[] allItems = FindObjectsOfType<ItemInformation>();
-        for (int i = 0; i < allItems.Length; i++)
-        {
-            ItemInformation info = allItems[i];
-            if (info == null) continue;
-
-            GameObject root = GetItemRoot(info);
-            if (root == null || !root.activeInHierarchy) continue;
-
-            int id = root.GetInstanceID();
-            if (!seen.Add(id)) continue;
-            results.Add(root);
-        }
-    }
-
-    static void CollectToolRootsInRange<T>(Vector3 camPos, float maxDistSqr, HashSet<int> seen, List<GameObject> results)
-        where T : Component
-    {
-        T[] tools = FindObjectsOfType<T>();
-        for (int i = 0; i < tools.Length; i++)
-        {
-            T tool = tools[i];
-            if (tool == null) continue;
-            GameObject root = tool.gameObject;
-            if (!root.activeInHierarchy) continue;
-            if ((root.transform.position - camPos).sqrMagnitude > maxDistSqr) continue;
-
-            int id = root.GetInstanceID();
-            if (!seen.Add(id)) continue;
-            results.Add(root);
         }
     }
 
@@ -390,69 +564,19 @@ public class CharacterInteraction : MonoBehaviour
         return null;
     }
 
-    void EnsureOutline(GameObject target, Color? colorOverride = null)
-    {
-        if (target == null) return;
-
-        if (outlinedRoots.Contains(target))
-        {
-            if (colorOverride.HasValue)
-            {
-                RemoveOutline(target);
-                AddOutline(target, colorOverride);
-            }
-            return;
-        }
-
-        AddOutline(target, colorOverride);
-    }
-
-    void UpdateHeldOutline()
-    {
-        if (grabbedObject == null)
-        {
-            if (heldOutlineRoot != null)
-            {
-                RemoveOutline(heldOutlineRoot);
-                heldOutlineRoot = null;
-            }
-            return;
-        }
-
-        if (heldOutlineRoot == grabbedObject && outlinedRoots.Contains(grabbedObject))
-            return;
-
-        if (heldOutlineRoot != null && heldOutlineRoot != grabbedObject)
-            RemoveOutline(heldOutlineRoot);
-
-        RemoveOutline(grabbedObject);
-        AddOutline(grabbedObject, heldOutlineColor);
-        heldOutlineRoot = grabbedObject;
-    }
-
-    void RemoveOutline(GameObject target)
-    {
-        if (target == null) return;
-        ClearOutline(target);
-        outlinedRoots.Remove(target);
-    }
-
     void OnGUI()
     {
         if (cameraTransform == null) return;
+        if (GameplayInputGate.IsBlocked) return;
+
+        Color c = (aimedObject != null) ? crosshairAimColor : crosshairDefaultColor;
 
         if (crosshairTexture == null)
         {
-            Color old = GUI.color;
-            GUI.color = (aimedObject != null) ? crosshairAimColor : crosshairDefaultColor;
-            float x = (Screen.width - 4f) / 2f;
-            float y = (Screen.height - 4f) / 2f;
-            GUI.DrawTexture(new Rect(x, y, 4f, 4f), Texture2D.whiteTexture);
-            GUI.color = old;
+            DrawCrosshair(c, crosshairSize);
             return;
         }
 
-        Color c = (aimedObject != null) ? crosshairAimColor : crosshairDefaultColor;
         GUI.color = c;
         float size = crosshairSize;
         float px = (Screen.width - size) / 2f;
@@ -461,9 +585,31 @@ public class CharacterInteraction : MonoBehaviour
         GUI.color = Color.white;
     }
 
+    static void DrawCrosshair(Color color, float size)
+    {
+        float cx = Screen.width * 0.5f;
+        float cy = Screen.height * 0.5f;
+        float armLength = size * 0.45f;
+        float gap = size * 0.12f;
+        float thickness = Mathf.Max(2f, size * 0.06f);
+        float halfThickness = thickness * 0.5f;
+
+        Color old = GUI.color;
+        GUI.color = color;
+        Texture2D tex = Texture2D.whiteTexture;
+
+        GUI.DrawTexture(new Rect(cx - gap - armLength, cy - halfThickness, armLength, thickness), tex);
+        GUI.DrawTexture(new Rect(cx + gap, cy - halfThickness, armLength, thickness), tex);
+        GUI.DrawTexture(new Rect(cx - halfThickness, cy - gap - armLength, thickness, armLength), tex);
+        GUI.DrawTexture(new Rect(cx - halfThickness, cy + gap, thickness, armLength), tex);
+
+        GUI.color = old;
+    }
+
     void HandleLeftPressLogic()
     {
         if (cameraTransform == null) return;
+        if (_hookActive) return;
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -537,16 +683,19 @@ public class CharacterInteraction : MonoBehaviour
         grabbedCollisionDetection = rb.collisionDetectionMode;
 
         SuspendFromConveyorBelts(rb);
-        rb.constraints &= ~RigidbodyConstraints.FreezeRotation;
-        if (!rb.isKinematic)
-        {
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
-        rb.isKinematic = true;
+
+        // 保持 Dynamic + MovePosition 跟随准星；勿冻结 Position（会锁死在世界坐标无法跟随）。
+        // 必须先切到 Dynamic，再清零速度（kinematic 上设置 velocity 会报错）。
+        rb.isKinematic = false;
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.useGravity = false;
         rb.detectCollisions = true;
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+        IgnorePlayerCollisionsWhileHeld(rb);
 
         currentHoldDistance = GetGrabDistance(rb);
         grabFollowVelocity = Vector3.zero;
@@ -560,7 +709,6 @@ public class CharacterInteraction : MonoBehaviour
         if (itemInfoUI != null) itemInfoUI.Hide();
         aimedObject = null;
         Grabbed?.Invoke(grabbedObject);
-        UpdateHeldOutline();
     }
 
     float GetGrabDistance(Rigidbody rb)
@@ -577,12 +725,216 @@ public class CharacterInteraction : MonoBehaviour
 
     void HandleThrow()
     {
+        if (_hookActive) return;
         if (grabbedObject == null || cameraTransform == null) return;
         if (Input.GetMouseButtonDown(1))
         {
             Vector3 dir = cameraTransform.forward.normalized;
             ReleaseGrabbedObject(true, dir);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 钩爪：按 F 发射线缆把准星瞄准的物体勾回到玩家身前掉落
+    // ------------------------------------------------------------------
+
+    void HandleSummonInput()
+    {
+        if (cameraTransform == null) return;
+        if (!Input.GetKeyDown(summonKey)) return;
+        if (_hookActive) return;
+        if (grabbedObject != null) return;
+        if (TVStaticOverlay.IsActive) return;
+        if (EndDayInteractable.ShouldConsumeInteractKey) return;
+        if (Time.unscaledTime - _lastSummonTime < summonCooldown) return;
+
+        TrySummonAimedTarget();
+    }
+
+    /// <summary>
+    /// 朝准星方向做一次无视 maxGrabDistance 的射线，找到第一个带 Rigidbody 的目标后
+    /// 启动钩爪流程：飞出 → 钩住 → 回拉 → 落地。
+    /// </summary>
+    public bool TrySummonAimedTarget()
+    {
+        if (cameraTransform == null) return false;
+        if (_hookActive || grabbedObject != null) return false;
+
+        Camera cam = cameraTransform.GetComponent<Camera>();
+        Ray ray = cam != null
+            ? cam.ScreenPointToRay(new Vector2(Screen.width / 2f, Screen.height / 2f))
+            : new Ray(cameraTransform.position, cameraTransform.forward);
+
+        float dist = summonMaxDistance > 0f ? summonMaxDistance : Mathf.Infinity;
+        if (!Physics.Raycast(ray, out RaycastHit hit, dist, summonMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        GameObject target = ResolveInteractableRoot(hit.collider);
+        Rigidbody rb = GetInteractableRigidbody(target);
+        if (rb == null) return false;
+        if (rb.transform == transform || rb.transform.IsChildOf(transform)) return false;
+
+        _lastSummonTime = Time.unscaledTime;
+        if (_hookRoutine != null) StopCoroutine(_hookRoutine);
+        _hookRoutine = StartCoroutine(HookSequence(rb));
+        return true;
+    }
+
+    IEnumerator HookSequence(Rigidbody target)
+    {
+        _hookActive = true;
+        EnsureHookLine();
+        _hookLine.enabled = true;
+
+        // ---- Phase 1: 钩爪飞出 ----
+        Vector3 muzzle = GetHookMuzzleWorld();
+        Vector3 currentTarget = target != null ? target.worldCenterOfMass : muzzle;
+        float flyDistance = Vector3.Distance(muzzle, currentTarget);
+        float flyDuration = Mathf.Max(0.04f, flyDistance / Mathf.Max(0.1f, hookFlySpeed));
+
+        float t = 0f;
+        while (t < flyDuration)
+        {
+            if (target == null) { FinishHook(); yield break; }
+
+            t += Time.deltaTime;
+            float a = Mathf.Clamp01(t / flyDuration);
+            muzzle = GetHookMuzzleWorld();
+            currentTarget = target.worldCenterOfMass;
+            Vector3 tip = Vector3.Lerp(muzzle, currentTarget, a);
+            UpdateHookLine(muzzle, tip);
+            yield return null;
+        }
+
+        if (target == null) { FinishHook(); yield break; }
+
+        // ---- Phase 2: 钩住目标 ----
+        // 通过 TryGrab 让 WorkTable / EmbeddedTrashItem / 传送带等监听者按正常流程响应。
+        aimedObject = target.gameObject;
+        TryGrab(target.gameObject);
+        if (grabbedRb != target)
+        {
+            FinishHook();
+            yield break;
+        }
+
+        PromoteHeldItemPermanently();
+        if (hookPassThroughObstacles)
+            grabbedRb.detectCollisions = false;
+
+        // ---- Phase 3: 沿线缆回拉到掉落点 ----
+        Vector3 startPos = grabbedRb.position;
+        Vector3 ComputeDropPos() =>
+            cameraTransform.position + cameraTransform.forward * Mathf.Max(minHoldDistance, summonDropDistance);
+        float pullDistance = Vector3.Distance(startPos, ComputeDropPos());
+        float pullDuration = Mathf.Max(0.08f, pullDistance / Mathf.Max(0.1f, hookPullSpeed));
+
+        float pt = 0f;
+        while (pt < pullDuration)
+        {
+            if (grabbedRb == null) { FinishHook(); yield break; }
+
+            pt += Time.deltaTime;
+            float a = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(pt / pullDuration));
+            Vector3 pos = Vector3.Lerp(startPos, ComputeDropPos(), a);
+            grabbedRb.position = pos;
+            grabbedRb.velocity = Vector3.zero;
+            grabbedRb.angularVelocity = Vector3.zero;
+            UpdateHookLine(GetHookMuzzleWorld(), pos);
+            yield return null;
+        }
+
+        // ---- Phase 4: 落地（恢复碰撞 + 释放） ----
+        if (grabbedRb != null)
+        {
+            if (hookPassThroughObstacles)
+                grabbedRb.detectCollisions = true;
+            Physics.SyncTransforms();
+        }
+
+        ReleaseGrabbedObject(false, Vector3.zero);
+
+        // ---- Phase 5: 线缆收回 ----
+        Vector3 retractStart = GetHookMuzzleWorld();
+        Vector3 retractEnd = _hookLine != null && _hookLine.positionCount >= 2
+            ? _hookLine.GetPosition(1)
+            : retractStart;
+        float rt = 0f;
+        while (rt < hookRetractDuration)
+        {
+            rt += Time.deltaTime;
+            float a = Mathf.Clamp01(rt / hookRetractDuration);
+            Vector3 muz = GetHookMuzzleWorld();
+            Vector3 tip = Vector3.Lerp(retractEnd, muz, a);
+            UpdateHookLine(muz, tip);
+            yield return null;
+        }
+
+        FinishHook();
+    }
+
+    void FinishHook()
+    {
+        if (_hookLine != null)
+            _hookLine.enabled = false;
+        _hookActive = false;
+        _hookRoutine = null;
+    }
+
+    void EnsureHookLine()
+    {
+        if (_hookLine != null) return;
+
+        var go = new GameObject("HookLine");
+        go.transform.SetParent(transform, false);
+        go.hideFlags = HideFlags.DontSave;
+
+        _hookLine = go.AddComponent<LineRenderer>();
+        _hookLine.useWorldSpace = true;
+        _hookLine.positionCount = 2;
+        _hookLine.numCapVertices = 4;
+        _hookLine.numCornerVertices = 0;
+        _hookLine.startWidth = hookLineWidth;
+        _hookLine.endWidth = hookLineWidth * 1.3f;
+        _hookLine.alignment = LineAlignment.View;
+        _hookLine.textureMode = LineTextureMode.Stretch;
+        _hookLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        _hookLine.receiveShadows = false;
+        _hookLine.material = GetHookLineMaterial();
+        _hookLine.startColor = hookLineColor;
+        _hookLine.endColor = hookLineColor;
+        _hookLine.enabled = false;
+    }
+
+    Material GetHookLineMaterial()
+    {
+        if (hookLineMaterial != null) return hookLineMaterial;
+
+        Shader sh = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+        if (sh == null) sh = Shader.Find("Sprites/Default");
+        if (sh == null) sh = Shader.Find("Unlit/Color");
+        if (sh == null) return null;
+
+        hookLineMaterial = new Material(sh);
+        if (hookLineMaterial.HasProperty("_Color"))
+            hookLineMaterial.SetColor("_Color", hookLineColor);
+        else if (hookLineMaterial.HasProperty("_BaseColor"))
+            hookLineMaterial.SetColor("_BaseColor", hookLineColor);
+        return hookLineMaterial;
+    }
+
+    void UpdateHookLine(Vector3 from, Vector3 to)
+    {
+        if (_hookLine == null) return;
+        _hookLine.SetPosition(0, from);
+        _hookLine.SetPosition(1, to);
+    }
+
+    Vector3 GetHookMuzzleWorld()
+    {
+        if (hookOrigin != null) return hookOrigin.position;
+        if (cameraTransform != null) return cameraTransform.TransformPoint(hookMuzzleLocalOffset);
+        return transform.position;
     }
 
     /// <summary>
@@ -625,9 +977,15 @@ public class CharacterInteraction : MonoBehaviour
         RigidbodyConstraints constraints = grabbedOriginalConstraints;
         CollisionDetectionMode collisionDetection = grabbedCollisionDetection;
 
-        ResolvePenetrationBeforeRelease(releasedRb);
+        ResolveRigidbodyPenetration(releasedRb);
+        RestorePlayerCollisionsWhileHeld();
 
-        releasedRb.isKinematic = wasKinematic;
+        // 投掷时需要 Dynamic 才能施加力；松手后由 Released/Thrown 监听方（如 Knife）决定是否回到 Kinematic。
+        if (applyThrow && wasKinematic)
+            releasedRb.isKinematic = false;
+        else
+            releasedRb.isKinematic = wasKinematic;
+
         releasedRb.useGravity = useGravity;
         releasedRb.detectCollisions = true;
         releasedRb.interpolation = interpolation;
@@ -653,21 +1011,57 @@ public class CharacterInteraction : MonoBehaviour
         grabbedRb = null;
         grabFollowVelocity = Vector3.zero;
         UnsuspendFromConveyorBelts(releasedRb);
-        UpdateHeldOutline();
+    }
+
+    void IgnorePlayerCollisionsWhileHeld(Rigidbody rb)
+    {
+        RestorePlayerCollisionsWhileHeld();
+        if (rb == null) return;
+
+        Collider[] heldColliders = rb.GetComponentsInChildren<Collider>(false);
+        Collider[] playerColliders = GetComponentsInChildren<Collider>(false);
+        if (heldColliders.Length == 0 || playerColliders.Length == 0) return;
+
+        for (int i = 0; i < heldColliders.Length; i++)
+        {
+            Collider held = heldColliders[i];
+            if (held == null || !held.enabled || held.isTrigger) continue;
+
+            for (int j = 0; j < playerColliders.Length; j++)
+            {
+                Collider player = playerColliders[j];
+                if (player == null || !player.enabled) continue;
+
+                Physics.IgnoreCollision(held, player, true);
+                _ignoredPlayerCollisions.Add((held, player));
+            }
+        }
+    }
+
+    void RestorePlayerCollisionsWhileHeld()
+    {
+        for (int i = 0; i < _ignoredPlayerCollisions.Count; i++)
+        {
+            (Collider held, Collider player) = _ignoredPlayerCollisions[i];
+            if (held != null && player != null)
+                Physics.IgnoreCollision(held, player, false);
+        }
+
+        _ignoredPlayerCollisions.Clear();
     }
 
     /// <summary>
-    /// 松手前把物体从重叠的静态碰撞体中推出，避免穿地后无法恢复碰撞。
+    /// 把刚体从重叠的碰撞体中推出（持物每帧 / 松手前调用）。
     /// </summary>
-    static void ResolvePenetrationBeforeRelease(Rigidbody rb)
+    void ResolveRigidbodyPenetration(Rigidbody rb)
     {
         if (rb == null) return;
 
         Collider[] ownColliders = rb.GetComponentsInChildren<Collider>(false);
         if (ownColliders.Length == 0) return;
 
-        const int maxIterations = 10;
-        const float skin = 0.01f;
+        const int maxIterations = 8;
+        float skin = holdCollisionSkin;
 
         for (int iteration = 0; iteration < maxIterations; iteration++)
         {
@@ -683,7 +1077,7 @@ public class CharacterInteraction : MonoBehaviour
                     bounds.center,
                     bounds.extents,
                     own.transform.rotation,
-                    ~0,
+                    holdCollisionMask,
                     QueryTriggerInteraction.Ignore);
 
                 for (int j = 0; j < overlaps.Length; j++)
@@ -691,6 +1085,7 @@ public class CharacterInteraction : MonoBehaviour
                     Collider other = overlaps[j];
                     if (other == null || other.isTrigger) continue;
                     if (other.transform.IsChildOf(rb.transform)) continue;
+                    if (IsHeldCollider(other)) continue;
 
                     if (!Physics.ComputePenetration(
                             own, own.transform.position, own.transform.rotation,
@@ -724,168 +1119,28 @@ public class CharacterInteraction : MonoBehaviour
         holdPoint.Rotate(cameraTransform.forward, scroll * rotateSpeed, Space.World);
     }
 
-    void AddOutline(GameObject target, Color? colorOverride)
-    {
-        if (target == null || outlinedRoots.Contains(target)) return;
-
-        Material baseMat = GetOutlineBaseMaterial();
-        if (baseMat == null) return;
-
-        Color outlineColor = colorOverride ?? GetOutlineColor(target);
-        float width = ComputeOutlineWidthForTarget(target);
-        int created = 0;
-
-        var meshRenderers = target.GetComponentsInChildren<MeshRenderer>(true);
-        for (int i = 0; i < meshRenderers.Length; i++)
-            created += TryAddOutlineForRenderer(meshRenderers[i], baseMat, outlineColor, width);
-
-        var skinnedRenderers = target.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-        for (int i = 0; i < skinnedRenderers.Length; i++)
-            created += TryAddOutlineForSkinnedRenderer(skinnedRenderers[i], baseMat, outlineColor, width);
-
-        if (created == 0)
-            Debug.LogWarning($"[CharacterInteraction] No renderers found for outline on {target.name}.", target);
-        else
-            outlinedRoots.Add(target);
-    }
-
-    float ComputeOutlineWidthForTarget(GameObject target)
-    {
-        if (target == null) return outlineWidth;
-
-        Bounds bounds = ItemInfoWorldUI.CalculateWorldBounds(target);
-        float maxExtent = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
-        return outlineWidth * Mathf.Max(maxExtent, 0.2f);
-    }
-
-    int TryAddOutlineForRenderer(MeshRenderer mr, Material baseMat, Color outlineColor, float width)
-    {
-        if (mr == null || !mr.enabled || mr.gameObject.name.EndsWith("_Outline")) return 0;
-
-        var mf = mr.GetComponent<MeshFilter>();
-        if (mf == null || mf.sharedMesh == null) return 0;
-
-        var outlineGo = new GameObject(mr.gameObject.name + "_Outline");
-        outlineGo.transform.SetParent(mr.transform, false);
-        outlineGo.transform.localPosition = Vector3.zero;
-        outlineGo.transform.localRotation = Quaternion.identity;
-        outlineGo.transform.localScale = Vector3.one;
-        outlineGo.layer = mr.gameObject.layer;
-        outlineGo.hideFlags = HideFlags.DontSave;
-
-        var cloneMf = outlineGo.AddComponent<MeshFilter>();
-        cloneMf.sharedMesh = mf.sharedMesh;
-
-        var cloneMr = outlineGo.AddComponent<MeshRenderer>();
-        SetupOutlineRenderer(cloneMr, baseMat, outlineColor, width);
-        activeOutlines.Add(outlineGo);
-        return 1;
-    }
-
-    int TryAddOutlineForSkinnedRenderer(SkinnedMeshRenderer smr, Material baseMat, Color outlineColor, float width)
-    {
-        if (smr == null || !smr.enabled || smr.sharedMesh == null || smr.gameObject.name.EndsWith("_Outline"))
-            return 0;
-
-        var outlineGo = new GameObject(smr.gameObject.name + "_Outline");
-        outlineGo.transform.SetParent(smr.transform, false);
-        outlineGo.transform.localPosition = Vector3.zero;
-        outlineGo.transform.localRotation = Quaternion.identity;
-        outlineGo.transform.localScale = Vector3.one;
-        outlineGo.layer = smr.gameObject.layer;
-        outlineGo.hideFlags = HideFlags.DontSave;
-
-        var cloneSmr = outlineGo.AddComponent<SkinnedMeshRenderer>();
-        cloneSmr.sharedMesh = smr.sharedMesh;
-        cloneSmr.bones = smr.bones;
-        cloneSmr.rootBone = smr.rootBone;
-        SetupOutlineRenderer(cloneSmr, baseMat, outlineColor, width);
-        activeOutlines.Add(outlineGo);
-        return 1;
-    }
-
-    void SetupOutlineRenderer(Renderer renderer, Material baseMat, Color outlineColor, float width)
-    {
-        renderer.material = CreateOutlineMaterialInstance(baseMat, outlineColor, width);
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-    }
-
-    void ClearOutline(GameObject target)
-    {
-        for (int i = activeOutlines.Count - 1; i >= 0; i--)
-        {
-            GameObject go = activeOutlines[i];
-            if (go == null)
-            {
-                activeOutlines.RemoveAt(i);
-                continue;
-            }
-
-            bool shouldRemove = target == null || go.transform.IsChildOf(target.transform);
-            if (!shouldRemove) continue;
-
-            Destroy(go);
-            activeOutlines.RemoveAt(i);
-        }
-
-        if (target == null)
-        {
-            outlinedRoots.Clear();
-            heldOutlineRoot = null;
-        }
-        else
-        {
-            outlinedRoots.Remove(target);
-            if (heldOutlineRoot == target)
-                heldOutlineRoot = null;
-        }
-    }
-
-    Material GetOutlineBaseMaterial()
-    {
-        if (outlineMaterial != null && outlineMaterial.shader != null && outlineMaterial.shader.isSupported)
-            return outlineMaterial;
-
-        Shader shader = Shader.Find("Hemiao/ItemOutline");
-        if (shader == null || !shader.isSupported)
-            shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null || !shader.isSupported)
-            shader = Shader.Find("Unlit/Color");
-        if (shader == null) return null;
-
-        outlineMaterial = new Material(shader);
-        return outlineMaterial;
-    }
-
-    static Material CreateOutlineMaterialInstance(Material baseMat, Color color, float width)
-    {
-        var inst = new Material(baseMat);
-        if (inst.HasProperty("_Color"))
-            inst.SetColor("_Color", color);
-        else if (inst.HasProperty("_BaseColor"))
-            inst.SetColor("_BaseColor", color);
-        if (inst.HasProperty("_OutlineWidth"))
-            inst.SetFloat("_OutlineWidth", width);
-        return inst;
-    }
-
-    Color GetOutlineColor(GameObject target) => defaultOutlineColor;
-
-    Color GetCategoryOutlineColor(ItemInformation.ItemCategory category)
-    {
-        int index = (int)category;
-        if (outlineColorsByCategory != null && index >= 0 && index < outlineColorsByCategory.Length)
-            return outlineColorsByCategory[index];
-        return defaultOutlineColor;
-    }
-
     void OnDisable()
     {
+        Grabbed  -= OnGrabbedForOutline;
+        Released -= OnReleasedForOutline;
+        Thrown   -= OnReleasedForOutline;
+        ItemOutlineSystem.ClearHeld();
+
+        if (LevelManager.Instance != null)
+            LevelManager.Instance.LevelGameplayStarted -= OnLevelGameplayStarted;
+
+        if (_hookRoutine != null)
+        {
+            StopCoroutine(_hookRoutine);
+            _hookRoutine = null;
+        }
+        _hookActive = false;
+        if (_hookLine != null)
+            _hookLine.enabled = false;
+
         if (grabbedRb != null)
             ReleaseGrabbedObject(false, Vector3.zero);
 
-        ClearOutline(null);
         if (itemInfoUI != null) itemInfoUI.Hide();
     }
 
@@ -899,18 +1154,10 @@ public class CharacterInteraction : MonoBehaviour
     {
         if (hit.collider == null) return null;
 
-        // 同 ResolveInteractableRoot：命中 InspectableItem 层级时统一返回组合根。
-        InspectableItem insp = hit.collider.GetComponentInParent<InspectableItem>();
-        if (insp != null)
-        {
-            Rigidbody iRb = insp.GetComponent<Rigidbody>();
-            if (iRb == null) iRb = insp.GetComponentInParent<Rigidbody>();
-            return iRb != null ? iRb.gameObject : insp.gameObject;
-        }
+        GameObject root = ResolveInteractableRoot(hit.collider);
+        if (root == null) return null;
 
-        var rb = hit.rigidbody != null
-            ? hit.rigidbody
-            : hit.collider.GetComponentInParent<Rigidbody>();
+        Rigidbody rb = GetInteractableRigidbody(root);
         return rb != null ? rb.gameObject : null;
     }
 

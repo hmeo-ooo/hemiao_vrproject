@@ -678,10 +678,6 @@ MonoBehaviour:
   maxActiveItems: 9
   maxTotalItems: 15
   stopSpawningWhenTotalLimitReached: 1
-  complexityComposition:
-    basicProbability: 100
-    compositeProbability: 0
-    dangerousProbability: 0
 --- !u!1 &381340791
 GameObject:
   m_ObjectHideFlags: 0
@@ -1163,9 +1159,6 @@ MonoBehaviour:
   interactKey: 101
   playerTransform: {fileID: 0}
   proximityDistance: 3
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineMaterial: {fileID: 0}
-  outlineWidthScale: 0.03
   promptFormat: "\u6309 [{0}] \u63D0\u524D\u7ED3\u675F\u8FD9\u4E00\u5929"
   promptLocalOffset: {x: 0, y: 0.8, z: 0}
   promptFontSize: 0.22
@@ -1173,6 +1166,11 @@ MonoBehaviour:
   promptWaitingColor: {r: 0.75, g: 0.75, b: 0.75, a: 0.85}
   promptPanelWidth: 2.4
   promptPanelHeight: 0.45
+  cannotEndDayGarbageMessage: "\u573A\u4E0A\u4ECD\u6709 {0} \u4EF6\u5783\u573E\u5F85\u5904\u7406\uFF0C\u65E0\u6CD5\u7ED3\u675F\u8FD9\u4E00\u5929\u3002"
+  cannotEndDayMoreSpawningMessage: "\u5783\u573E\u5806\u8FD8\u4F1A\u7EE7\u7EED\u4EA7\u51FA\u5783\u573E\uFF0C\u65E0\u6CD5\u7ED3\u675F\u8FD9\u4E00\u5929\u3002"
+  cannotEndDayGenericMessage: "\u4ECD\u6709\u5DE5\u4F5C\u672A\u5B8C\u6210\uFF0C\u65E0\u6CD5\u7ED3\u675F\u8FD9\u4E00\u5929\u3002"
+  cannotEndDaySubtitleDuration: 2.5
+  cannotEndDaySubtitleColor: {r: 1, g: 0.75, b: 0.4, a: 1}
   sessionController: {fileID: 0}
 --- !u!114 &766360821 stripped
 MonoBehaviour:
@@ -1352,10 +1350,6 @@ MonoBehaviour:
   maxActiveItems: 9
   maxTotalItems: 15
   stopSpawningWhenTotalLimitReached: 1
-  complexityComposition:
-    basicProbability: 100
-    compositeProbability: 0
-    dangerousProbability: 0
 --- !u!1 &890010001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1573,6 +1567,9 @@ MonoBehaviour:
   gameplayDayText: {fileID: 1442449611}
   dayTextFormat: Day {0}
   advanceLevelAfterRound: 1
+  resetPlayerOnRoundEnd: 1
+  playerTransform: {fileID: 0}
+  playerSpawnPoint: {fileID: 0}
 --- !u!114 &900300004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1598,6 +1595,7 @@ MonoBehaviour:
   levelSelectBackButton: {fileID: 0}
   hubFont: {fileID: 0}
   levelFormat: '{0}'
+  levelButtonFormat: Day {0}
   creditsFormat: 'Credits: {0}'
   debtFormat: 'Debt: {0:N0}'
   enterButtonLabel: Enter Level
@@ -2198,17 +2196,38 @@ MonoBehaviour:
   holdDistance: 1.2
   minHoldDistance: 0.6
   grabFollowSmoothTime: 0.03
+  summonKey: 102
+  summonMaxDistance: 0
+  summonMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  summonDropDistance: 1.5
+  summonCooldown: 0.4
+  hookOrigin: {fileID: 0}
+  hookMuzzleLocalOffset: {x: 0.35, y: -0.3, z: 0.3}
+  hookLineMaterial: {fileID: 0}
+  hookLineColor: {r: 0.95, g: 0.85, b: 0.55, a: 1}
+  hookLineWidth: 0.02
+  hookFlySpeed: 32
+  hookPullSpeed: 22
+  hookRetractDuration: 0.12
+  hookPassThroughObstacles: 1
+  clampHoldPointAgainstWalls: 1
+  holdCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  holdWallPadding: 0.08
+  holdCollisionSkin: 0.02
   easeToHoldDistance: 0
   holdDistanceEaseSpeed: 2
   grabHoldThreshold: 0
   throwForce: 15
   scrollWheelRotatesObject: 1
   rotateSpeed: 360
-  outlineMaterial: {fileID: 2100000, guid: 8e4b0d3f2c5e6a7b9c0123456789def0, type: 2}
-  outlineWidth: 0.02
   defaultOutlineColor: {r: 1, g: 1, b: 1, a: 1}
   heldOutlineColor: {r: 1, g: 0.85, b: 0.1, a: 1}
-  outlineColorsByCategory: []
+  outlineWidthMeters: 0.005
+  decomposableOutlineWidthMeters: 0.012
 --- !u!1 &1442449609
 GameObject:
   m_ObjectHideFlags: 0
@@ -2270,7 +2289,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -2493,7 +2513,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -2796,6 +2817,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dimAlpha: 0.916
   dimColor: {r: 0, g: 0, b: 0, a: 1}
+  instructionTopMargin: 28
+  instructionPanelWidth: 960
+  instructionPanelHeight: 52
+  instructionFontSize: 28
+  instructionTextColor: {r: 0.95, g: 0.95, b: 0.95, a: 1}
+  instructionPanelColor: {r: 0.06, g: 0.06, b: 0.08, a: 0.72}
+  defaultKnifeSprite: {fileID: 0}
   displayDistance: 1.5
   displayDistancePadding: 1.1
   fieldOfView: 45
@@ -2876,7 +2904,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:

@@ -3294,8 +3294,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4606190717030797965}
   - component: {fileID: 4064150601277463492}
-  - component: {fileID: 5829471630258417396}
-  - component: {fileID: 7293841056172938450}
   m_Layer: 0
   m_Name: Sci_Fi_Hands_Full_With_Shield_01
   m_TagString: Untagged
@@ -3356,51 +3354,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &5829471630258417396
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3794188823490119735}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c7e4a91b2f8d4e64a9b3c1d05e7f2a8b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  interaction: {fileID: 0}
-  cameraTransform: {fileID: 0}
-  idleClipKey: Idle
-  grabClipKey: Get
-  holdClipKey: Idle_Fight
-  throwClipKey: Attack_01
-  scrollUpClipKey: Attack_02
-  scrollDownClipKey: Attack_03
-  handStaggerOffset: 0.06
-  handStaggerSmooth: 10
-  syncPitchToCamera: 0
---- !u!114 &7293841056172938450
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3794188823490119735}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d8f3b62a4e1c4978b5a0d9e6c2f7a4b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  attachToCamera: 1
-  cameraLocalPosition: {x: 0, y: -0.32, z: 0.42}
-  cameraLocalEuler: {x: 0, y: 0, z: 0}
-  targetNearClip: 0.02
-  adjustMainCameraNearClip: 1
-  forceUpdateWhenOffscreen: 1
-  expandSkinnedBounds: 1
-  boundsPadding: 2.5
-  firstPersonLayerName: 
-  disableOcclusionCullingOnRenderers: 1
 --- !u!1 &3799216674149456461
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 挂在 bed 等休息点物体上：玩家靠近时显示白色描边与「按 E 提前结束这一天」提示；
+/// 挂在 bed 等休息点物体上：玩家靠近时显示「按 E 提前结束这一天」提示；
 /// 当场景内没有待处理的垃圾、且垃圾堆（Garbage dump / TrashHeap）不会再补充新垃圾时，
 /// 按 E 可提前结束本关。
 /// </summary>
@@ -16,17 +16,8 @@ public class EndDayInteractable : MonoBehaviour
     [Tooltip("玩家 Transform；留空则自动查找 CharacterInteraction。")]
     public Transform playerTransform;
 
-    [Tooltip("进入此距离后显示描边与提示。")]
+    [Tooltip("进入此距离后显示提示。")]
     public float proximityDistance = 3f;
-
-    [Header("描边")]
-    public Color outlineColor = Color.white;
-
-    [Tooltip("自定义描边材质，留空则自动使用 Hemiao/ItemOutline。")]
-    public Material outlineMaterial;
-
-    [Range(0f, 0.5f)]
-    public float outlineWidthScale = 0.03f;
 
     [Header("提示 UI")]
     public string promptFormat = "按 [{0}] 提前结束这一天";
@@ -71,13 +62,7 @@ public class EndDayInteractable : MonoBehaviour
 
     Collider _collider;
     bool _playerInRange;
-    bool _outlineActive;
     bool _canEndDay;
-
-    readonly System.Collections.Generic.List<GameObject> _outlineRenderers =
-        new System.Collections.Generic.List<GameObject>();
-
-    Material _outlineMaterialInstance;
 
     Canvas _promptCanvas;
     RectTransform _promptPanel;
@@ -207,8 +192,6 @@ public class EndDayInteractable : MonoBehaviour
         if (_playerInRange == inRange) return;
         _playerInRange = inRange;
 
-        SetOutlineActive(inRange);
-
         if (_promptCanvas != null)
             _promptCanvas.gameObject.SetActive(inRange);
 
@@ -303,130 +286,6 @@ public class EndDayInteractable : MonoBehaviour
             t.rotation = Quaternion.LookRotation(-toCam.normalized, Vector3.up);
     }
 
-    void SetOutlineActive(bool active)
-    {
-        if (_outlineActive == active) return;
-        _outlineActive = active;
-        if (active) ApplyOutline();
-        else ClearOutlineRenderers();
-    }
-
-    void ApplyOutline()
-    {
-        ClearOutlineRenderers();
-
-        Material baseMat = GetOutlineMaterial();
-        if (baseMat == null) return;
-
-        float width = ComputeOutlineWidth();
-
-        MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>(true);
-        for (int i = 0; i < meshRenderers.Length; i++)
-            TryAddOutlineForRenderer(meshRenderers[i], baseMat, outlineColor, width);
-
-        SkinnedMeshRenderer[] skinned = GetComponentsInChildren<SkinnedMeshRenderer>(true);
-        for (int i = 0; i < skinned.Length; i++)
-            TryAddOutlineForSkinned(skinned[i], baseMat, outlineColor, width);
-    }
-
-    float ComputeOutlineWidth()
-    {
-        Bounds b = _collider != null
-            ? _collider.bounds
-            : ItemInfoWorldUI.CalculateWorldBounds(gameObject);
-        float maxExtent = Mathf.Max(b.extents.x, b.extents.y, b.extents.z);
-        return outlineWidthScale * Mathf.Max(maxExtent, 0.2f);
-    }
-
-    Material GetOutlineMaterial()
-    {
-        if (outlineMaterial != null && outlineMaterial.shader != null && outlineMaterial.shader.isSupported)
-            return outlineMaterial;
-
-        Shader shader = Shader.Find("Hemiao/ItemOutline");
-        if (shader == null || !shader.isSupported) shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null || !shader.isSupported) shader = Shader.Find("Unlit/Color");
-        if (shader == null) return null;
-
-        _outlineMaterialInstance = new Material(shader);
-        outlineMaterial = _outlineMaterialInstance;
-        return outlineMaterial;
-    }
-
-    void TryAddOutlineForRenderer(MeshRenderer mr, Material baseMat, Color color, float width)
-    {
-        if (mr == null || !mr.enabled) return;
-        if (mr.gameObject.name.EndsWith("_EndDayOutline")) return;
-
-        MeshFilter mf = mr.GetComponent<MeshFilter>();
-        if (mf == null || mf.sharedMesh == null) return;
-
-        GameObject go = new GameObject(mr.gameObject.name + "_EndDayOutline");
-        go.transform.SetParent(mr.transform, false);
-        go.transform.localPosition = Vector3.zero;
-        go.transform.localRotation = Quaternion.identity;
-        go.transform.localScale = Vector3.one;
-        go.layer = mr.gameObject.layer;
-        go.hideFlags = HideFlags.DontSave;
-
-        MeshFilter cloneMf = go.AddComponent<MeshFilter>();
-        cloneMf.sharedMesh = mf.sharedMesh;
-
-        MeshRenderer cloneMr = go.AddComponent<MeshRenderer>();
-        SetupOutlineRenderer(cloneMr, baseMat, color, width);
-        _outlineRenderers.Add(go);
-    }
-
-    void TryAddOutlineForSkinned(SkinnedMeshRenderer smr, Material baseMat, Color color, float width)
-    {
-        if (smr == null || !smr.enabled || smr.sharedMesh == null) return;
-        if (smr.gameObject.name.EndsWith("_EndDayOutline")) return;
-
-        GameObject go = new GameObject(smr.gameObject.name + "_EndDayOutline");
-        go.transform.SetParent(smr.transform, false);
-        go.transform.localPosition = Vector3.zero;
-        go.transform.localRotation = Quaternion.identity;
-        go.transform.localScale = Vector3.one;
-        go.layer = smr.gameObject.layer;
-        go.hideFlags = HideFlags.DontSave;
-
-        SkinnedMeshRenderer cloneSmr = go.AddComponent<SkinnedMeshRenderer>();
-        cloneSmr.sharedMesh = smr.sharedMesh;
-        cloneSmr.bones = smr.bones;
-        cloneSmr.rootBone = smr.rootBone;
-        SetupOutlineRenderer(cloneSmr, baseMat, color, width);
-        _outlineRenderers.Add(go);
-    }
-
-    static void SetupOutlineRenderer(Renderer renderer, Material baseMat, Color color, float width)
-    {
-        renderer.material = CreateOutlineMaterialInstance(baseMat, color, width);
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-    }
-
-    static Material CreateOutlineMaterialInstance(Material baseMat, Color color, float width)
-    {
-        Material inst = new Material(baseMat);
-        if (inst.HasProperty("_Color"))
-            inst.SetColor("_Color", color);
-        else if (inst.HasProperty("_BaseColor"))
-            inst.SetColor("_BaseColor", color);
-        if (inst.HasProperty("_OutlineWidth"))
-            inst.SetFloat("_OutlineWidth", width);
-        return inst;
-    }
-
-    void ClearOutlineRenderers()
-    {
-        for (int i = _outlineRenderers.Count - 1; i >= 0; i--)
-        {
-            if (_outlineRenderers[i] != null)
-                Destroy(_outlineRenderers[i]);
-        }
-        _outlineRenderers.Clear();
-    }
-
     void OnDisable()
     {
         SetPlayerInRange(false);
@@ -436,10 +295,6 @@ public class EndDayInteractable : MonoBehaviour
     {
         if (Instance == this)
             Instance = null;
-
-        ClearOutlineRenderers();
-        if (_outlineMaterialInstance != null)
-            Destroy(_outlineMaterialInstance);
     }
 
     void OnDrawGizmosSelected()

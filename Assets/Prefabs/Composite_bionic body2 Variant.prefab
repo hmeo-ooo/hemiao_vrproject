@@ -13,6 +13,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Composite_bionic body2 Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 8433264519071598371, guid: f754e902f2671a84fab864f99067e05d,
+        type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 9098161622171213209, guid: f754e902f2671a84fab864f99067e05d,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -173,10 +178,10 @@ MonoBehaviour:
     {0} \u6B21"
   inspectionDisplayEulers: {x: 0, y: 180, z: 0}
   inspectionDisplayDistance: 0
-  knifeSprite: {fileID: 0}
-  knifeIdleAnchor: {x: 0.85, y: 0.5}
-  knifeUISize: {x: 220, y: 220}
-  knifeTipPivot: {x: 0.31111112, y: 0.1759257}
+  knifeSprite: {fileID: 21300000, guid: 860d2c030d989ba44aa41febe4209a3d, type: 3}
+  knifeIdleAnchor: {x: 0.8, y: 0.7}
+  knifeUISize: {x: 300, y: 300}
+  knifeTipPivot: {x: 0.059259254, y: 0.9777778}
   knifeUIRotation: 0
   knifeReturnSmoothTime: 0.12
   cutAnchors:
@@ -213,6 +218,6 @@ MonoBehaviour:
   optionalDropEntries:
   - prefab: {fileID: 4843321675143679443, guid: 16d61dfc72572c1418da46ae945962d2,
       type: 3}
-    count: 0
+    count: 1
     spawnChance: 0.1
   dropInitialSpeed: 0

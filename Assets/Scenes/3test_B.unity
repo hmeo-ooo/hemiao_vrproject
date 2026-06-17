@@ -306,16 +306,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7043d1cac0a0a54b985010f406ec406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetCamera: {fileID: 1830741507}
-  mode: 0
-  smoothSpeed: 0
-  reverse: 1
-  lockToCameraPlane: 0
-  viewportPosition: {x: 0.5, y: 0.5}
-  distanceFromCamera: 2
-  preserveLocalScaleWhenLocked: 1
+  useScreenSpaceTopLeft: 1
+  hudScreenOffset: {x: 20, y: -20}
+  hudFontSize: 28
+  hudLineSpacing: 6
+  hudLineSize: {x: 420, y: 36}
+  hidePanelBackground: 1
   creditsText: {fileID: 1800000012}
   creditsFormat: credits:{0}
+  comboText: {fileID: 0}
+  comboFormat: Combo x{0}
+  comboBonusFormat: ' (+{0}%)'
+  comboIdleColor: {r: 1, g: 1, b: 1, a: 1}
+  comboActiveColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  comboBonusColor: {r: 0.4, g: 1, b: 0.5, a: 1}
 --- !u!1 &204309979
 GameObject:
   m_ObjectHideFlags: 0
@@ -652,10 +656,6 @@ MonoBehaviour:
   maxActiveItems: 9
   maxTotalItems: 15
   stopSpawningWhenTotalLimitReached: 1
-  complexityComposition:
-    basicProbability: 100
-    compositeProbability: 0
-    dangerousProbability: 0
 --- !u!1 &422951701
 GameObject:
   m_ObjectHideFlags: 0
@@ -1003,10 +1003,13 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   itemSpawner: {fileID: 310765818}
+  additionalItemSpawners: []
+  shareSpawnQuotaAcrossSpawners: 1
   propsRoot: {fileID: 890010022}
   aislesRoot: {fileID: 0}
   defaultAislePrefab: {fileID: 0}
   hideSceneAislesWhenUsingLevelLayout: 1
+  clearGameplayItemsOnEnd: 1
   loadLevelOnStart: 1
   startLevelIndex: 0
 --- !u!1 &890010011
@@ -1159,6 +1162,9 @@ MonoBehaviour:
   gameplayDayText: {fileID: 1442449611}
   dayTextFormat: Day {0}
   advanceLevelAfterRound: 1
+  resetPlayerOnRoundEnd: 1
+  playerTransform: {fileID: 0}
+  playerSpawnPoint: {fileID: 0}
 --- !u!114 &900300004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1184,6 +1190,7 @@ MonoBehaviour:
   levelSelectBackButton: {fileID: 0}
   hubFont: {fileID: 0}
   levelFormat: '{0}'
+  levelButtonFormat: Day {0}
   creditsFormat: 'Credits: {0}'
   debtFormat: 'Debt: {0:N0}'
   enterButtonLabel: Enter Level
@@ -1712,16 +1719,38 @@ MonoBehaviour:
   holdDistance: 1.8
   minHoldDistance: 0.6
   grabFollowSmoothTime: 0.03
+  summonKey: 102
+  summonMaxDistance: 0
+  summonMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  summonDropDistance: 1.5
+  summonCooldown: 0.4
+  hookOrigin: {fileID: 0}
+  hookMuzzleLocalOffset: {x: 0.35, y: -0.3, z: 0.3}
+  hookLineMaterial: {fileID: 0}
+  hookLineColor: {r: 0.95, g: 0.85, b: 0.55, a: 1}
+  hookLineWidth: 0.02
+  hookFlySpeed: 32
+  hookPullSpeed: 22
+  hookRetractDuration: 0.12
+  hookPassThroughObstacles: 1
+  clampHoldPointAgainstWalls: 1
+  holdCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  holdWallPadding: 0.08
+  holdCollisionSkin: 0.02
   easeToHoldDistance: 0
   holdDistanceEaseSpeed: 2
   grabHoldThreshold: 0
   throwForce: 15
   scrollWheelRotatesObject: 1
   rotateSpeed: 360
-  outlineMaterial: {fileID: 2100000, guid: 8e4b0d3f2c5e6a7b9c0123456789def0, type: 2}
-  outlineWidth: 0.02
   defaultOutlineColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineColorsByCategory: []
+  heldOutlineColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  outlineWidthMeters: 0.005
+  decomposableOutlineWidthMeters: 0.012
 --- !u!1 &1442449609
 GameObject:
   m_ObjectHideFlags: 0
@@ -1783,7 +1812,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -1918,7 +1948,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -2173,6 +2204,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   credits: 0
+  comboTierSize: 5
+  comboBonusPercentPerTier: 10
 --- !u!4 &1721031215
 Transform:
   m_ObjectHideFlags: 0
@@ -2219,7 +2252,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dimAlpha: 0.916
   dimColor: {r: 0, g: 0, b: 0, a: 1}
+  instructionTopMargin: 28
+  instructionPanelWidth: 960
+  instructionPanelHeight: 52
+  instructionFontSize: 28
+  instructionTextColor: {r: 0.95, g: 0.95, b: 0.95, a: 1}
+  instructionPanelColor: {r: 0.06, g: 0.06, b: 0.08, a: 0.72}
+  defaultKnifeSprite: {fileID: 0}
   displayDistance: 1.5
+  displayDistancePadding: 1.1
   fieldOfView: 45
   inspectionRoomCenter: {x: 10000, y: 10000, z: 10000}
 --- !u!4 &1735258428
@@ -2298,7 +2339,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:

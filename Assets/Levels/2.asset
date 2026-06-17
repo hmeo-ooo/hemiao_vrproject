@@ -12,21 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9ea695347c4a964ba875342efa7da2d, type: 3}
   m_Name: 2
   m_EditorClassIdentifier: 
-  levelNumber: 1
-  displayName: day 1
+  levelNumber: 2
+  displayName: day 2
   levelDurationSeconds: 150
   complexityComposition:
-    basicProbability: 70
-    compositeProbability: 30
-    dangerousProbability: 0
+    basicProbability: 80
+    compositeProbability: 27
+    dangerousProbability: 20
   spawnPrefabs: []
   spawnInterval: 2
   itemsPerBurst: 1
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 40
-  maxTotalItems: 40
+  maxActiveItems: 25
+  maxTotalItems: 30
   autoStartSpawning: 1
   sceneProps: []
   aisles:
@@ -34,29 +34,29 @@ MonoBehaviour:
     label: 
     prefab: {fileID: 6311291743662715886, guid: 5b9f7a5ecdfa1944098bc1ccb82338ed,
       type: 3}
-    localPosition: {x: -5.8, y: 3, z: 13.5}
-    localEulerAngles: {x: 0, y: 0, z: 0}
+    localPosition: {x: -1429.8501, y: 2.3838203, z: 848.47}
+    localEulerAngles: {x: 0, y: 165.00003, z: 0}
     localScale: {x: 3, y: 3, z: 3}
   - category: 1
     label: 
     prefab: {fileID: 7983567825950029453, guid: 70338ac1f005129429c6d37ec2ed77b5,
       type: 3}
-    localPosition: {x: -1.2600002, y: 3, z: 13.641678}
-    localEulerAngles: {x: 0, y: 0, z: 0}
+    localPosition: {x: -1434.7686, y: 2.3838203, z: 846.6828}
+    localEulerAngles: {x: 0, y: 173.2169, z: 0}
     localScale: {x: 3, y: 3, z: 3}
   - category: 2
     label: 
     prefab: {fileID: 3237057129092650422, guid: 638ef916b1ac5904096b35725dd671d8,
       type: 3}
-    localPosition: {x: 3.6, y: 3, z: 13.641678}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    localScale: {x: 3, y: 3, z: 3}
+    localPosition: {x: -1440.4744, y: 2.3838203, z: 846.7369}
+    localEulerAngles: {x: -0, y: 188.96265, z: 0}
+    localScale: {x: 3.0000005, y: 3, z: 3.0000005}
   - category: 3
     label: 
     prefab: {fileID: 3926130088177694511, guid: 97e8141684233d046907f11bc1b207d8,
       type: 3}
-    localPosition: {x: 7.79, y: 3, z: 13.641678}
-    localEulerAngles: {x: 0, y: 0, z: 0}
+    localPosition: {x: -1445.75, y: 2.3838203, z: 847.97}
+    localEulerAngles: {x: -0, y: 194.99997, z: 0}
     localScale: {x: 3, y: 3, z: 3}
   trashHeapOverrides:
   - heapId: main_heap
@@ -119,15 +119,15 @@ MonoBehaviour:
     - prefab: {fileID: 4241415306051010994, guid: 6ed972a457da1a140bc8ea246074fd14,
         type: 3}
     initialTrashCount: 15
-    allowDuplicates: 0
+    allowDuplicates: 1
     respawnEnabled: 1
     respawnInterval: 5
     respawnPerBurst: 1
     respawnTargetActiveCount: 0
-    maxTotalSpawned: 25
+    maxTotalSpawned: 20
   interferences: []
   designNotes: 
   showTutorialBeforeLevel: 1
   tutorialTitle: day 2
   tutorialBody: "\u8FDB\u5165\u62C6\u89E3\u6A21\u5F0F\uFF1A\u6293\u53D6\u590D\u5408\u5783\u573E\u540E,\u6309\u4E0B
-    \u3010 E \u3011 \u952E\u8FDB\u5165\u7CBE\u7EC6\u64CD\u4F5C\u6A21\u5F0F\u3002\n\n\u9AD8\u5371\u7269\u54C1\uFF1A\u6709\u4E9B\u5783\u573E\u5728\u62C6\u89E3\u540E\u4F1A\u6389\u843D\u95EA\u70C1\u7EA2\u5149\u7684\u9AD8\u5371\u7269\u54C1\uFF0C\u82E5\u9AD8\u5371\u7269\u54C1\u5728\u573A\u666F\u4E2D\u505C\u7559\u65F6\u95F4\u8FC7\u957F,\u5C06\u5F15\u53D1\u7206\u70B8,\u5BFC\u81F4\u6263\u9664\u4FE1\u7528\u70B9\u5E76\u7834\u574F\u5468\u8FB9\u672A\u5904\u7406\u7684\u5783\u573E\u3002\n\r\n\u4E13\u7528\u901A\u9053:\u9AD8\u5371\u7269\u54C1\u7EDD\u4E0D\u80FD\u6295\u5165\u666E\u901A\u901A\u9053,\u5FC5\u987B\u6295\u5165\u4E13\u7528\u7684\u3010\u9AD8\u5371\u56DE\u6536\u901A\u9053\u3011\u3002"
+    \u3010 E \u3011 \u952E\u8FDB\u5165\u7CBE\u7EC6\u64CD\u4F5C\u6A21\u5F0F,\u6839\u636E\u63D0\u793A\u64CD\u4F5C\u62C6\u89E3\u590D\u5408\u5783\u573E\u5427\uFF01\n\n\u9AD8\u5371\u7269\u54C1\uFF1A\u6709\u4E9B\u5783\u573E\u5728\u62C6\u89E3\u540E\u4F1A\u6389\u843D\u95EA\u70C1\u7EA2\u5149\u7684\u9AD8\u5371\u7269\u54C1\uFF0C\u82E5\u9AD8\u5371\u7269\u54C1\u5728\u573A\u666F\u4E2D\u505C\u7559\u65F6\u95F4\u8FC7\u957F,\u5C06\u5F15\u53D1\u7206\u70B8,\u5BFC\u81F4\u6263\u9664\u4FE1\u7528\u70B9\u5E76\u7834\u574F\u5468\u8FB9\u672A\u5904\u7406\u7684\u5783\u573E\u3002\n\r\n\u4E13\u7528\u901A\u9053:\u9AD8\u5371\u7269\u54C1\u7EDD\u4E0D\u80FD\u6295\u5165\u666E\u901A\u901A\u9053,\u5FC5\u987B\u6295\u5165\u4E13\u7528\u7684\u3010\u9AD8\u5371\u56DE\u6536\u901A\u9053\u3011\u3002"

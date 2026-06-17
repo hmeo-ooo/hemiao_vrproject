@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -60,8 +60,8 @@ public class ItemInfoWorldUI : MonoBehaviour
         if (info == null || anchor == null || panelRect == null) return;
 
         followTarget = anchor;
-        nameText.text = info.ResolvedDisplayName;
-        descriptionText.text = info.itemDescription ?? string.Empty;
+        nameText.text = SanitizeForMsyh(info.ResolvedDisplayName);
+        descriptionText.text = SanitizeForMsyh(info.itemDescription);
 
         LayoutPanel();
         panelRect.gameObject.SetActive(true);
@@ -168,6 +168,20 @@ public class ItemInfoWorldUI : MonoBehaviour
         for (int i = 1; i < renderers.Length; i++)
             bounds.Encapsulate(renderers[i].bounds);
         return bounds;
+    }
+
+    /// <summary>
+    /// MSYH SDF 为静态图集，不含弯引号等排版字符；显示前替换为字库内已有的标点。
+    /// </summary>
+    static string SanitizeForMsyh(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        return text
+            .Replace('\u2018', '\u300C') // ' → 「
+            .Replace('\u2019', '\u300D') // ' → 」
+            .Replace('\u201C', '\u300C') // " → 「
+            .Replace('\u201D', '\u300D'); // " → 」
     }
 
     void BuildUi()

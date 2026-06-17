@@ -88,7 +88,7 @@ public static class DetachSpawnUtility
     {
         GameObject inst = Object.Instantiate(prefab, anchor, prefab.transform.rotation);
 
-        // 与 ItemSpawner 流程保持一致：保证有 Rigidbody + Collider，并按类别上色描边。
+        // 与 ItemSpawner 流程保持一致：保证有 Rigidbody + Collider。
         ItemSpawner.EnsurePhysics(inst);
         ItemSpawner.FinalizeLooseItem(inst);
 

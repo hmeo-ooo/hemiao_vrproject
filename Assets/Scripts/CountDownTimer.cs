@@ -69,6 +69,8 @@ public class CountDownTimer : MonoBehaviour
     // ???????????
     public bool IsRunning { get; private set; }
 
+    public bool IsPaused => isPaused;
+
     // ????????????????????????
     public float Duration => durationSeconds;
 
@@ -88,6 +90,7 @@ public class CountDownTimer : MonoBehaviour
 
     // ?????????????????????????????????
     private bool warningSoundPlayed;
+    private bool isPaused;
 
     private void Awake()
     {
@@ -166,7 +169,7 @@ public class CountDownTimer : MonoBehaviour
 
     private void Update()
     {
-        if (!IsRunning)
+        if (!IsRunning || isPaused)
         {
             return;
         }
@@ -223,7 +226,20 @@ public class CountDownTimer : MonoBehaviour
     public void StopTimer()
     {
         IsRunning = false;
+        isPaused = false;
         UpdateDisplay();
+    }
+
+    public void PauseTimer()
+    {
+        if (!IsRunning) return;
+        isPaused = true;
+    }
+
+    public void ResumeTimer()
+    {
+        if (!IsRunning) return;
+        isPaused = false;
     }
 
     /// <summary>

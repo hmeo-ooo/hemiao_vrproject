@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1513569263690875784}
   - component: {fileID: 7719244747864290403}
   - component: {fileID: 8344554487036607737}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Basic_organic snack 4
   m_TagString: OrganicMatter
   m_Icon: {fileID: 0}
@@ -31,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -8.41, y: 0.62, z: 0}
-  m_LocalScale: {x: 0.85, y: 0.85, z: 0.85}
+  m_LocalScale: {x: 1.35, y: 1.35, z: 1.35}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}

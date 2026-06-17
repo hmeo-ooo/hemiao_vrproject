@@ -6,12 +6,15 @@ using UnityEngine;
 /// 协调关卡准备 UI、倒计时、掉落与玩家输入。
 /// </summary>
 [DefaultExecutionOrder(10)]
+[RequireComponent(typeof(StartScreenUI))]
 public class LevelSessionController : MonoBehaviour
 {
     [Header("引用")]
     public LevelManager levelManager;
+    public StartScreenUI startScreenUI;
     public LevelHubUI levelHubUI;
     public LevelTutorialUI levelTutorialUI;
+    public PauseMenuUI pauseMenuUI;
     public CountDownTimer countDownTimer;
 
     [Tooltip("游戏中显示的面板（关卡号、倒计时、余额等）；准备界面时隐藏。")]
@@ -36,7 +39,12 @@ public class LevelSessionController : MonoBehaviour
              "留空则在 Start 时自动用玩家初始位置作为出生点。")]
     public Transform playerSpawnPoint;
 
+    [Tooltip("正式进入关卡时玩家朝向（Y 轴欧拉角，度）。")]
+    public float playerRoundStartRotationY = 180f;
+
     bool _roundActive;
+    bool _gamePaused;
+    float _savedTimeScale = 1f;
     Vector3 _autoSpawnPosition;
     Quaternion _autoSpawnRotation = Quaternion.identity;
     bool _autoSpawnCaptured;
@@ -53,17 +61,23 @@ public class LevelSessionController : MonoBehaviour
     {
         if (levelManager == null)
             levelManager = LevelManager.Instance;
+        if (startScreenUI == null)
+            startScreenUI = GetComponent<StartScreenUI>();
         if (levelHubUI == null)
             levelHubUI = GetComponent<LevelHubUI>();
         if (levelTutorialUI == null)
             levelTutorialUI = GetComponent<LevelTutorialUI>();
+        if (pauseMenuUI == null)
+            pauseMenuUI = GetComponent<PauseMenuUI>();
         if (countDownTimer == null)
             countDownTimer = FindObjectOfType<CountDownTimer>();
+
+        CacheGameplayHudCanvas();
+        SetGameplayHudVisible(false);
     }
 
     void Start()
     {
-        CacheGameplayHudCanvas();
         ResolvePlayerTransform();
         CapturePlayerSpawnPose();
 
@@ -76,6 +90,21 @@ public class LevelSessionController : MonoBehaviour
             countDownTimer.OnFinished.AddListener(OnCountdownFinished);
         }
 
+        SetGameplayHudVisible(false);
+
+        if (startScreenUI != null)
+            startScreenUI.Show(OnStartScreenDismissed);
+        else
+            ShowInitialHub();
+    }
+
+    void OnStartScreenDismissed()
+    {
+        ShowInitialHub();
+    }
+
+    void ShowInitialHub()
+    {
         int preferred = levelManager != null ? levelManager.startLevelIndex : 0;
         int index = levelManager != null ? levelManager.ResolveLevelIndex(preferred) : 0;
         PrepareLevelAndShowHub(index);
@@ -85,7 +114,10 @@ public class LevelSessionController : MonoBehaviour
     {
         if (countDownTimer != null)
             countDownTimer.OnFinished.RemoveListener(OnCountdownFinished);
+        ForceResumeIfPaused();
     }
+
+    public bool IsGamePaused => _gamePaused;
 
     public void OnEnterLevelButtonClicked()
     {
@@ -199,6 +231,8 @@ public class LevelSessionController : MonoBehaviour
 
     public void BeginRound()
     {
+        ForceResumeIfPaused();
+
         if (levelManager == null)
             levelManager = LevelManager.Instance;
 
@@ -220,6 +254,7 @@ public class LevelSessionController : MonoBehaviour
         }
 
         _roundActive = true;
+        ApplyPlayerRoundStartPose();
         CreditManager.Instance?.ResetThrowCombo();
         levelHubUI?.Hide();
         GameplayInputGate.SetBlocked(false);
@@ -227,6 +262,9 @@ public class LevelSessionController : MonoBehaviour
         RefreshGameplayDayText();
 
         levelManager.BeginLevelGameplay();
+
+        CharacterInteraction character = FindObjectOfType<CharacterInteraction>();
+        character?.ForceRefreshInteractionVisuals();
 
         if (countDownTimer != null)
         {
@@ -239,6 +277,7 @@ public class LevelSessionController : MonoBehaviour
 
     public void EndRoundAndShowHub(bool tryAdvanceLevel)
     {
+        ForceResumeIfPaused();
         _roundActive = false;
         StopAllInterferences();
 
@@ -285,8 +324,27 @@ public class LevelSessionController : MonoBehaviour
         if (playerSpawnPoint != null) return;
 
         _autoSpawnPosition = playerTransform.position;
-        _autoSpawnRotation = playerTransform.rotation;
+        _autoSpawnRotation = GetRoundStartRotation();
         _autoSpawnCaptured = true;
+    }
+
+    Quaternion GetRoundStartRotation()
+    {
+        return Quaternion.Euler(0f, playerRoundStartRotationY, 0f);
+    }
+
+    void SyncCharacterMoveYaw(Transform target, Quaternion rotation)
+    {
+        if (target == null) return;
+        CharacterMove move = target.GetComponent<CharacterMove>();
+        if (move != null)
+            move.SetYaw(rotation.eulerAngles.y);
+    }
+
+    /// <summary>正式进入关卡：回到出生点并应用关卡起始朝向。</summary>
+    void ApplyPlayerRoundStartPose()
+    {
+        ResetPlayerToSpawn();
     }
 
     /// <summary>把玩家瞬移回 playerSpawnPoint（优先）或开局自动捕获的初始姿态，并清零物理速度。</summary>
@@ -301,7 +359,7 @@ public class LevelSessionController : MonoBehaviour
         if (playerSpawnPoint != null)
         {
             pos = playerSpawnPoint.position;
-            rot = playerSpawnPoint.rotation;
+            rot = GetRoundStartRotation();
         }
         else if (_autoSpawnCaptured)
         {
@@ -324,6 +382,7 @@ public class LevelSessionController : MonoBehaviour
         }
 
         playerTransform.SetPositionAndRotation(pos, rot);
+        SyncCharacterMoveYaw(playerTransform, rot);
 
         Physics.SyncTransforms();
     }
@@ -346,9 +405,94 @@ public class LevelSessionController : MonoBehaviour
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Escape))
+            TryTogglePause();
+
         if (!_roundActive) return;
+        if (_gamePaused) return;
+
         _roundElapsed += Time.deltaTime;
         TickInterferences();
+    }
+
+    void TryTogglePause()
+    {
+        if (_gamePaused)
+        {
+            ResumeGame();
+            return;
+        }
+
+        if (!_roundActive || !CanOpenPauseMenu())
+            return;
+
+        PauseGame();
+    }
+
+    bool CanOpenPauseMenu()
+    {
+        InspectionView inspection = InspectionView.Instance;
+        if (inspection != null && inspection.IsInspecting)
+            return false;
+
+        if (TVStaticOverlay.IsActive)
+            return false;
+
+        return true;
+    }
+
+    void PauseGame()
+    {
+        if (_gamePaused || !_roundActive) return;
+
+        _gamePaused = true;
+        _savedTimeScale = Time.timeScale;
+        Time.timeScale = 0f;
+
+        GameplayInputGate.SetBlocked(true);
+        countDownTimer?.PauseTimer();
+
+        if (SfxManager.Instance != null)
+            SfxManager.Instance.PauseBgm();
+
+        pauseMenuUI?.Show(ResumeGame);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    void ResumeGame()
+    {
+        if (!_gamePaused) return;
+
+        _gamePaused = false;
+        Time.timeScale = _savedTimeScale > 0f ? _savedTimeScale : 1f;
+
+        pauseMenuUI?.Hide();
+
+        if (!_roundActive)
+            return;
+
+        GameplayInputGate.SetBlocked(false);
+        countDownTimer?.ResumeTimer();
+
+        if (SfxManager.Instance != null)
+            SfxManager.Instance.ResumeBgm();
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    void ForceResumeIfPaused()
+    {
+        if (!_gamePaused) return;
+
+        _gamePaused = false;
+        Time.timeScale = _savedTimeScale > 0f ? _savedTimeScale : 1f;
+        pauseMenuUI?.Hide();
+
+        if (SfxManager.Instance != null)
+            SfxManager.Instance.ResumeBgm();
     }
 
     // ------------------------------------------------------------------
@@ -414,6 +558,8 @@ public class LevelSessionController : MonoBehaviour
 
     void StartInterference(LevelInterferenceConfig cfg)
     {
+        if (cfg == null) return;
+        cfg.SanitizeDefaults();
         switch (cfg.type)
         {
             case LevelInterferenceConfig.InterferenceType.TVStaticOverlay:
@@ -472,8 +618,16 @@ public class LevelSessionController : MonoBehaviour
         if (_gameplayHudCanvas == null)
             CacheGameplayHudCanvas();
 
-        if (_gameplayHudCanvas != null && visible && _gameplayHudCanvas.transform.localScale.sqrMagnitude < 0.0001f)
+        if (_gameplayHudCanvas != null && visible)
             _gameplayHudCanvas.transform.localScale = Vector3.one;
+
+        if (visible)
+        {
+            BillboardUI billboard = gameplayHudRoot != null
+                ? gameplayHudRoot.GetComponentInParent<BillboardUI>()
+                : null;
+            billboard?.RefreshHudLayout();
+        }
     }
 
     void RefreshGameplayDayText()

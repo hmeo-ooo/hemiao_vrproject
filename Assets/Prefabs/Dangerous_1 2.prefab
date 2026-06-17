@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 4896063369024296321}
   - component: {fileID: 433257481963254526}
   - component: {fileID: 7982132996567729051}
-  - component: {fileID: 3851920620170368970}
+  - component: {fileID: 7123456789012345001}
   - component: {fileID: 9012345670000000001}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Dangerous_1 2
   m_TagString: DangerousGoods
   m_Icon: {fileID: 0}
@@ -131,8 +131,8 @@ MonoBehaviour:
   creditsOnCorrectThrow: 500
   itemDisplayName: "\u9AD8\u5EA6\u6613\u71C3\u9AD8\u538B\u74E6\u65AF\u7F50"
   itemDescription: "\u91CC\u9762\u88C5\u6EE1\u4E86\u6781\u5176\u66B4\u8E81\u7684\u6613\u71C3\u6C14\u4F53\u3002\u4E00\u65E6\u5F00\u59CB\u95EA\u70C1\uFF0C\u8BF4\u660E\u5B83\u9A6C\u4E0A\u8981\u8868\u6F14\u73B0\u573A\u6838\u7206\u3002\u7528\u4F60\u6700\u5FEB\u7684\u624B\u901F\u628A\u5B83\u7529\u8FDB\u3010\u9AD8\u5371\u901A\u9053\u3011\uFF01"
---- !u!64 &3851920620170368970
-MeshCollider:
+--- !u!136 &7123456789012345001
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -149,10 +149,11 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: -3669397134727586193, guid: 3792cf2313b3f7e4b928f296d232548f, type: 3}
+  serializedVersion: 2
+  m_Radius: 0.38
+  m_Height: 1.55
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &9012345670000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0

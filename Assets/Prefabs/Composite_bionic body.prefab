@@ -83,6 +83,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Composite_bionic body
       objectReference: {fileID: 0}
+    - target: {fileID: 2894025854792275951, guid: 76ee43d2fb250c144bb3668e079d64bf,
+        type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -173,10 +178,10 @@ MonoBehaviour:
     {0} \u6B21"
   inspectionDisplayEulers: {x: 0, y: 180, z: 0}
   inspectionDisplayDistance: 0
-  knifeSprite: {fileID: 0}
-  knifeIdleAnchor: {x: 0.85, y: 0.5}
-  knifeUISize: {x: 220, y: 220}
-  knifeTipPivot: {x: 0.31851852, y: 0.19814792}
+  knifeSprite: {fileID: 21300000, guid: 860d2c030d989ba44aa41febe4209a3d, type: 3}
+  knifeIdleAnchor: {x: 0.8, y: 0.7}
+  knifeUISize: {x: 300, y: 300}
+  knifeTipPivot: {x: 0.051851854, y: 0.98888856}
   knifeUIRotation: 0
   knifeReturnSmoothTime: 0.12
   cutAnchors:

@@ -115,6 +115,18 @@ public class LevelTutorialUI : MonoBehaviour
             _overlayCanvas.enabled = false;
     }
 
+    void OnDestroy()
+    {
+        RuntimeUiUtility.DestroyCanvas(ref _overlayCanvas);
+        panelRoot = null;
+        titleText = null;
+        bodyText = null;
+        startButton = null;
+        startButtonLabel = null;
+        backButton = null;
+        backButtonLabel = null;
+    }
+
     void HandleStartClicked()
     {
         Action cb = _onConfirmed;
@@ -139,7 +151,7 @@ public class LevelTutorialUI : MonoBehaviour
     {
         var canvasGo = new GameObject("LevelTutorialCanvas",
             typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        canvasGo.transform.SetParent(transform, false);
+        canvasGo.transform.SetParent(null, false);
 
         _overlayCanvas = canvasGo.GetComponent<Canvas>();
         _overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -194,6 +206,7 @@ public class LevelTutorialUI : MonoBehaviour
 
         EnsureBodyWrapping();
         ApplyFont();
+        RuntimeUiUtility.MarkPlayModeOnly(canvasGo);
     }
 
     void ApplyFont()

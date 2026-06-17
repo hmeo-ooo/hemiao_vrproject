@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1513569263690875784}
   - component: {fileID: 7719244747864290403}
   - component: {fileID: 8344554487036607737}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Basic_organic snack 5
   m_TagString: OrganicMatter
   m_Icon: {fileID: 0}
@@ -31,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -8.41, y: 0.62, z: 0}
-  m_LocalScale: {x: 0.85, y: 0.85, z: 0.85}
+  m_LocalScale: {x: 1.35, y: 1.35, z: 1.35}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -43,7 +43,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2901559934276544025}
-  m_Mesh: {fileID: 3929731919545770709, guid: 6c122614dde38c645bc846e4ebc94c0f, type: 3}
+  m_Mesh: {fileID: 6297996207057127282, guid: 073e3ef25b3ca844998d5c2e467c7afe, type: 3}
 --- !u!23 &5787699720913157516
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -127,9 +127,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 1
   complexity: 0
-  creditsOnCorrectThrow: 30
-  itemDisplayName: "\u80FD\u91CF\u68D2\u5305\u88C5\u888B"
-  itemDescription: "\u67D0\u4E2A\u52A0\u73ED\u5458\u5DE5\u7559\u4E0B\u7684\u72AF\u7F6A\u8BC1\u636E\u3002\u5305\u88C5\u7EB8\u91C7\u7528\u53EF\u964D\u89E3\uFF08\u624D\u602A\uFF09\u7684\u5408\u6210\u6709\u673A\u7269\uFF0C\u8001\u8001\u5B9E\u5B9E\u6254\u8FDB\u3010\u6709\u673A\u901A\u9053\u3011\u3002"
+  creditsOnCorrectThrow: 50
+  itemDisplayName: "\u75AF\u72C2\u89E6\u624B\u6C49\u5821"
+  itemDescription: "\u8BE1\u5F02\u7684\u9752\u7EFF\u8272\u9762\u5305\u80DA\u548C\u4ECE\u5939\u5C42\u91CC\u4F38\u51FA\u6765\u7684\u7D2B\u8272\u89E6\u624B\uFF0C\u8FD9\u5473\u9053\u7EDD\u5BF9\u80FD\u8BA9\u4EBA\u539F\u5730\u98DE\u5347\u3002\u8D81\u5B83\u8FD8\u6CA1\u5728\u4F20\u9001\u5E26\u4E0A\u5B75\u5316\u51FA\u5C0F\u89E6\u624B\u602A\uFF0C\u8D76\u7D27\u628A\u5B83\u585E\u8FDB\u3010\u6709\u673A\u901A\u9053\u3011\u5B9E\u884C\u7269\u7406\u964D\u89E3\u3002\u987A\u4FBF\u63D0\u4E00\u53E5\uFF1A\u4E25\u7981\u5458\u5DE5\u56E0\u8D2A\u5C0F\u4FBF\u5B9C\u5C06\u5176\u5F53\u4F5C\u5348\u9910\u3002"
 --- !u!64 &8344554487036607737
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -151,4 +151,4 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 3929731919545770709, guid: 6c122614dde38c645bc846e4ebc94c0f, type: 3}
+  m_Mesh: {fileID: 6297996207057127282, guid: 073e3ef25b3ca844998d5c2e467c7afe, type: 3}

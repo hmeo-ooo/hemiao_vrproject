@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 5922122770093124170}
   - component: {fileID: 4049365051463790697}
   - component: {fileID: 514996307476340905}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Prop_coin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -162,16 +162,41 @@ MonoBehaviour:
   m_GameObject: {fileID: 4241415306051010994}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1314da6d21f1eb3418eaf5ccdd4f6059, type: 3}
+  m_Script: {fileID: 11500000, guid: 4117b077a71f2494f9048db376ef8f9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  propType: 0
   triggerOnce: 1
-  creditReward: 200
-  showSubtitle: 1
-  subtitleDuration: 1.5
-  subtitleColor: {r: 1, g: 1, b: 1, a: 1}
-  pickupVfxPrefab: {fileID: 0}
-  vfxLifetime: 2
-  pickupSfx: {fileID: 0}
-  pickupSfxVolume: 1
-  destroyOnPickup: 1
+  coin:
+    creditReward: 200
+    showSubtitle: 1
+    subtitleDuration: 1.5
+    subtitleColor: {r: 1, g: 1, b: 1, a: 1}
+    pickupVfxPrefab: {fileID: 0}
+    vfxLifetime: 2
+    pickupSfx: {fileID: 0}
+    pickupSfxVolume: 1
+    destroyOnPickup: 1
+  magnet:
+    targetCategory: 0
+    attractMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    attractRadius: 1.6
+    maxAttachedItems: 5
+    attachOffset: 0.18
+    attractInterval: 0.08
+    attachSfx: {fileID: 0}
+    attachSfxVolume: 0.8
+    sumCreditsOnAisleHit: 1
+  lighter:
+    targetCategory: 1
+    burnMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    ignitionRadius: 0.8
+    burnDelay: 1.5
+    burnVfxPrefab: {fileID: 0}
+    burnVfxLifetime: 2
+    burnSfx: {fileID: 0}
+    burnSfxVolume: 0.8

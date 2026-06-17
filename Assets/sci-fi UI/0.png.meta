@@ -139,18 +139,18 @@ TextureImporter:
       name: 0_0
       rect:
         serializedVersion: 2
-        x: 2513
-        y: 5433
-        width: 1135
-        height: 1561
+        x: 2594
+        y: 5560
+        width: 990
+        height: 1964
       alignment: 0
       pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+      border: {x: 16, y: 0, z: 0, w: 641}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 17dcf47f25aa0ee45b8771116c0e41c1
+      spriteID: d9198ef48c581a141a8be5861f4adb27
       internalID: 1977695832
       vertices: []
       indices: 

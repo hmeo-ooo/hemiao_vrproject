@@ -24,20 +24,25 @@ PrefabInstance:
       propertyPath: m_Name
       value: Composite_bionic head 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3905442571881802818, guid: 1d11441d895d83d49ba5aef94d6c353e,
+        type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 4429637676391708408, guid: 1d11441d895d83d49ba5aef94d6c353e,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 1
+      value: 1.2
       objectReference: {fileID: 0}
     - target: {fileID: 4429637676391708408, guid: 1d11441d895d83d49ba5aef94d6c353e,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 1
+      value: 1.2
       objectReference: {fileID: 0}
     - target: {fileID: 4429637676391708408, guid: 1d11441d895d83d49ba5aef94d6c353e,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 1
+      value: 1.2
       objectReference: {fileID: 0}
     - target: {fileID: 4429637676391708408, guid: 1d11441d895d83d49ba5aef94d6c353e,
         type: 3}
@@ -187,7 +192,7 @@ MonoBehaviour:
   hammerSmashInstruction: "\u5DE6\u952E\u62FE\u53D6\u9524\u5B50\uFF0C\u5BF9\u7269\u54C1\u6572\u51FB
     {0} \u6B21"
   inspectionDisplayEulers: {x: 15.94, y: 150, z: -11.01}
-  inspectionDisplayDistance: 1
+  inspectionDisplayDistance: 0.8
   knifeSprite: {fileID: 0}
   knifeIdleAnchor: {x: 0.85, y: 0.5}
   knifeUISize: {x: 220, y: 220}

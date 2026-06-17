@@ -175,4 +175,11 @@ public class LevelDefinition : ScriptableObject
             return tutorialTitle.Trim();
         return !string.IsNullOrWhiteSpace(displayName) ? displayName : $"Level {levelNumber}";
     }
+
+    void OnValidate()
+    {
+        if (interferences == null) return;
+        for (int i = 0; i < interferences.Length; i++)
+            interferences[i]?.SanitizeDefaults();
+    }
 }

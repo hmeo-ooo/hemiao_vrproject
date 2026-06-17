@@ -85,6 +85,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: cb1662e31b02c0b4f8093a6a678e9ee9,
         type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: cb1662e31b02c0b4f8093a6a678e9ee9,
+        type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -204,10 +209,10 @@ MonoBehaviour:
     {0} \u6B21"
   inspectionDisplayEulers: {x: -48.4, y: -30.3, z: 0}
   inspectionDisplayDistance: 0
-  knifeSprite: {fileID: 0}
-  knifeIdleAnchor: {x: 0.85, y: 0.5}
-  knifeUISize: {x: 220, y: 220}
-  knifeTipPivot: {x: 0.32222223, y: 0.19444445}
+  knifeSprite: {fileID: 21300000, guid: 860d2c030d989ba44aa41febe4209a3d, type: 3}
+  knifeIdleAnchor: {x: 0.8, y: 0.7}
+  knifeUISize: {x: 300, y: 300}
+  knifeTipPivot: {x: 0.07037037, y: 0.9703702}
   knifeUIRotation: 0
   knifeReturnSmoothTime: 0.12
   cutAnchors: []
@@ -233,11 +238,11 @@ MonoBehaviour:
   - prefab: {fileID: 4843321675143679443, guid: 3ae43bbea76518144a7f2606b1dd5c5a,
       type: 3}
     count: 1
-    spawnChance: 0.1
+    spawnChance: 0.3
   - prefab: {fileID: 4843321675143679443, guid: 9bb4d0437d5fcd144a59a8ee56e0e317,
       type: 3}
     count: 1
-    spawnChance: 0.1
+    spawnChance: 0.3
   - prefab: {fileID: 4843321675143679443, guid: 1ddeb7374e4e9a746a700937361908d2,
       type: 3}
     count: 1

@@ -306,16 +306,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7043d1cac0a0a54b985010f406ec406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetCamera: {fileID: 1830741507}
-  mode: 0
-  smoothSpeed: 0
-  reverse: 1
-  lockToCameraPlane: 0
-  viewportPosition: {x: 0.5, y: 0.5}
-  distanceFromCamera: 2
-  preserveLocalScaleWhenLocked: 1
+  useScreenSpaceTopLeft: 1
+  canvasSortOrder: 50
+  hudScreenOffset: {x: 20, y: -20}
+  hudFontSize: 28
+  hudLineSpacing: 6
+  hudLineSize: {x: 420, y: 36}
+  hidePanelBackground: 1
+  dayText: {fileID: 0}
   creditsText: {fileID: 1800000012}
+  comboText: {fileID: 0}
   creditsFormat: credits:{0}
+  comboFormat: Combo x{0}
+  comboBonusFormat: ' (+{0}%)'
+  comboIdleColor: {r: 1, g: 1, b: 1, a: 1}
+  comboActiveColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  comboBonusColor: {r: 0.4, g: 1, b: 0.5, a: 1}
 --- !u!1 &204309979
 GameObject:
   m_ObjectHideFlags: 0
@@ -652,10 +658,6 @@ MonoBehaviour:
   maxActiveItems: 9
   maxTotalItems: 15
   stopSpawningWhenTotalLimitReached: 1
-  complexityComposition:
-    basicProbability: 100
-    compositeProbability: 0
-    dangerousProbability: 0
 --- !u!1 &422951701
 GameObject:
   m_ObjectHideFlags: 0
@@ -1006,10 +1008,13 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   itemSpawner: {fileID: 310765818}
+  additionalItemSpawners: []
+  shareSpawnQuotaAcrossSpawners: 1
   propsRoot: {fileID: 890010022}
   aislesRoot: {fileID: 0}
   defaultAislePrefab: {fileID: 0}
   hideSceneAislesWhenUsingLevelLayout: 1
+  clearGameplayItemsOnEnd: 1
   loadLevelOnStart: 1
   startLevelIndex: 0
 --- !u!1 &890010011
@@ -1101,7 +1106,7 @@ Transform:
   m_GameObject: {fileID: 890010031}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -2.33, y: 4.94, z: 4.85}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1120,6 +1125,7 @@ GameObject:
   - component: {fileID: 900300003}
   - component: {fileID: 900300004}
   - component: {fileID: 900300005}
+  - component: {fileID: 900300006}
   m_Layer: 0
   m_Name: LevelSession
   m_TagString: Untagged
@@ -1155,13 +1161,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   levelManager: {fileID: 890010003}
+  startScreenUI: {fileID: 0}
   levelHubUI: {fileID: 900300004}
   levelTutorialUI: {fileID: 900300005}
+  pauseMenuUI: {fileID: 0}
   countDownTimer: {fileID: 1492951562}
   gameplayHudRoot: {fileID: 937131016}
   gameplayDayText: {fileID: 1442449611}
   dayTextFormat: Day {0}
   advanceLevelAfterRound: 1
+  resetPlayerOnRoundEnd: 1
+  playerTransform: {fileID: 0}
+  playerSpawnPoint: {fileID: 0}
+  playerRoundStartRotationY: 180
 --- !u!114 &900300004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1187,6 +1199,7 @@ MonoBehaviour:
   levelSelectBackButton: {fileID: 0}
   hubFont: {fileID: 0}
   levelFormat: '{0}'
+  levelButtonFormat: Day {0}
   creditsFormat: 'Credits: {0}'
   debtFormat: 'Debt: {0:N0}'
   enterButtonLabel: Enter Level
@@ -1194,6 +1207,11 @@ MonoBehaviour:
   selectLevelButtonLabel: Select Level
   selectLevelTitle: Select Level
   selectLevelBackLabel: Back
+  hubButtonColor: {r: 1, g: 1, b: 1, a: 0.3}
+  hubMainButtonSize: {x: 240, y: 52}
+  levelSelectButtonSize: {x: 150, y: 72}
+  levelSelectBackButtonWidth: 160
+  levelSelectBackButtonHeight: 52
 --- !u!114 &900300005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1216,6 +1234,22 @@ MonoBehaviour:
   startLabel: "\u5F00\u59CB\u5173\u5361"
   backLabel: "\u8FD4\u56DE"
   uiFont: {fileID: 0}
+--- !u!114 &900300006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 900300001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f6a7b8c9d04123a4b5c6d7e8f90123, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelRoot: {fileID: 0}
+  startButton: {fileID: 0}
+  startButtonLabel: Start
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.7}
 --- !u!114 &900300014
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1715,16 +1749,38 @@ MonoBehaviour:
   holdDistance: 1.8
   minHoldDistance: 0.6
   grabFollowSmoothTime: 0.03
+  summonKey: 102
+  summonMaxDistance: 0
+  summonMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  summonDropDistance: 1.5
+  summonCooldown: 0.4
+  hookOrigin: {fileID: 0}
+  hookMuzzleLocalOffset: {x: 0.35, y: -0.3, z: 0.3}
+  hookLineMaterial: {fileID: 0}
+  hookLineColor: {r: 0.95, g: 0.85, b: 0.55, a: 1}
+  hookLineWidth: 0.02
+  hookFlySpeed: 32
+  hookPullSpeed: 22
+  hookRetractDuration: 0.12
+  hookPassThroughObstacles: 1
+  clampHoldPointAgainstWalls: 1
+  holdCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  holdWallPadding: 0.08
+  holdCollisionSkin: 0.02
   easeToHoldDistance: 0
   holdDistanceEaseSpeed: 2
   grabHoldThreshold: 0
   throwForce: 15
   scrollWheelRotatesObject: 1
   rotateSpeed: 360
-  outlineMaterial: {fileID: 2100000, guid: 8e4b0d3f2c5e6a7b9c0123456789def0, type: 2}
-  outlineWidth: 0.02
   defaultOutlineColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineColorsByCategory: []
+  heldOutlineColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  outlineWidthMeters: 0.005
+  decomposableOutlineWidthMeters: 0.012
 --- !u!1 &1442449609
 GameObject:
   m_ObjectHideFlags: 0
@@ -1786,7 +1842,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -1921,7 +1978,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -2176,6 +2234,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   credits: 0
+  comboTierSize: 5
+  comboBonusPercentPerTier: 10
 --- !u!4 &1721031215
 Transform:
   m_ObjectHideFlags: 0
@@ -2222,7 +2282,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dimAlpha: 0.916
   dimColor: {r: 0, g: 0, b: 0, a: 1}
+  instructionTopMargin: 28
+  instructionPanelWidth: 960
+  instructionPanelHeight: 52
+  instructionFontSize: 28
+  instructionTextColor: {r: 0.95, g: 0.95, b: 0.95, a: 1}
+  instructionPanelColor: {r: 0.06, g: 0.06, b: 0.08, a: 0.72}
+  defaultKnifeSprite: {fileID: 0}
   displayDistance: 1.5
+  displayDistancePadding: 1.1
   fieldOfView: 45
   inspectionRoomCenter: {x: 10000, y: 10000, z: 10000}
 --- !u!4 &1735258428
@@ -2301,7 +2369,8 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
@@ -3106,7 +3175,7 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 708708807257256422, guid: 97e8141684233d046907f11bc1b207d8,
+    - targetCorrespondingSourceObject: {fileID: 5170689058606888775, guid: 97e8141684233d046907f11bc1b207d8,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -3178,7 +3247,7 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 1344629197911968357, guid: 638ef916b1ac5904096b35725dd671d8,
+    - targetCorrespondingSourceObject: {fileID: 7069093685820032368, guid: 638ef916b1ac5904096b35725dd671d8,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -3386,7 +3455,7 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5451491453713668658, guid: 5b9f7a5ecdfa1944098bc1ccb82338ed,
+    - targetCorrespondingSourceObject: {fileID: 4629184127682184465, guid: 5b9f7a5ecdfa1944098bc1ccb82338ed,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}

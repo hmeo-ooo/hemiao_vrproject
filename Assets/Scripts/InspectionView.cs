@@ -37,23 +37,6 @@ public class InspectionView : MonoBehaviour
     [Range(0f, 1f)] public float dimAlpha = 0.9f;
     public Color dimColor = Color.black;
 
-    [Header("审视描边")]
-    [Tooltip("审视舱内 3D 物品的白色描边颜色。")]
-    public Color itemOutlineColor = Color.white;
-
-    [Tooltip("描边宽度系数（与 CharacterInteraction.outlineWidth 语义一致）。")]
-    public float itemOutlineWidth = 0.02f;
-
-    [Tooltip("描边材质（Hemiao/ItemOutline）。留空则运行时自动查找。")]
-    public Material itemOutlineMaterial;
-
-    [Header("工具 UI 描边")]
-    [Tooltip("切割刀 / 锤子图标的白色 UI 描边颜色。")]
-    public Color toolOutlineColor = Color.white;
-
-    [Tooltip("UI 描边偏移（像素，参考分辨率 1920×1080）。")]
-    public Vector2 toolOutlineDistance = new Vector2(3f, -3f);
-
     [Header("操作提示样式")]
     [Tooltip("审视界面顶部操作说明距屏幕上边缘的内边距（参考分辨率 1920×1080 像素）。")]
     public float instructionTopMargin = 28f;
@@ -148,10 +131,6 @@ public class InspectionView : MonoBehaviour
     float hammerShakeTimeLeft;
     const float HammerShakeDuration = 0.12f;
     const float HammerShakeMagnitude = 0.03f;
-    const string InspectionOutlineSuffix = "_InspectionOutline";
-
-    readonly List<GameObject> _inspectionOutlineRenderers = new List<GameObject>();
-    Material _itemOutlineMaterialInstance;
 
     public bool IsInspecting => isInspecting;
 
@@ -168,9 +147,6 @@ public class InspectionView : MonoBehaviour
     void OnDestroy()
     {
         if (_instance == this) _instance = null;
-        ClearInspectionItemOutline();
-        if (_itemOutlineMaterialInstance != null)
-            Destroy(_itemOutlineMaterialInstance);
         ReleaseRenderTexture();
     }
 
@@ -232,7 +208,6 @@ public class InspectionView : MonoBehaviour
         ConfigureKnifeForCurrentMode();
         ConfigureHammerForCurrentMode();
         ConfigureInstructionHint();
-        ApplyInspectionItemOutline();
 
         gateWasBlocked = GameplayInputGate.IsBlocked;
         GameplayInputGate.SetBlocked(true);
@@ -371,7 +346,6 @@ public class InspectionView : MonoBehaviour
         isHoldingKnife = false;
         knifeSwipeHasPrev = false;
 
-        ApplyToolUiOutline(knifeImage);
         knifeRt.SetAsLastSibling();
 
         InitKnifeCutProgress();
@@ -609,7 +583,6 @@ public class InspectionView : MonoBehaviour
         hammerHitCount = 0;
         hammerShakeTimeLeft = 0f;
 
-        ApplyToolUiOutline(hammerImage);
         hammerRt.SetAsLastSibling();
     }
 
@@ -729,7 +702,6 @@ public class InspectionView : MonoBehaviour
         rbStates.Clear();
         if (inspectedItem != null)
         {
-            ClearInspectionItemOutline();
             Destroy(inspectedItem);
             inspectedItem = null;
         }
@@ -768,7 +740,6 @@ public class InspectionView : MonoBehaviour
     /// </summary>
     void TeardownInspectionUI()
     {
-        ClearInspectionItemOutline();
         if (overlayCanvas != null) overlayCanvas.gameObject.SetActive(false);
         if (knifeRt != null) knifeRt.gameObject.SetActive(false);
         if (hammerRt != null) hammerRt.gameObject.SetActive(false);
@@ -1186,166 +1157,5 @@ public class InspectionView : MonoBehaviour
         renderTexture = null;
         rtWidth = 0;
         rtHeight = 0;
-    }
-
-    // ------------------------------------------------------------------
-    // 审视描边（3D 物品 + 工具 UI）
-    // ------------------------------------------------------------------
-
-    void ApplyInspectionItemOutline()
-    {
-        ClearInspectionItemOutline();
-        if (inspectedItem == null) return;
-
-        Material baseMat = GetItemOutlineBaseMaterial();
-        if (baseMat == null) return;
-
-        Color color = itemOutlineColor;
-        float width = ComputeInspectionOutlineWidth(inspectedItem);
-        int created = 0;
-
-        MeshRenderer[] meshRenderers = inspectedItem.GetComponentsInChildren<MeshRenderer>(true);
-        for (int i = 0; i < meshRenderers.Length; i++)
-            created += TryAddInspectionOutlineForRenderer(meshRenderers[i], baseMat, color, width);
-
-        SkinnedMeshRenderer[] skinnedRenderers = inspectedItem.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-        for (int i = 0; i < skinnedRenderers.Length; i++)
-            created += TryAddInspectionOutlineForSkinned(skinnedRenderers[i], baseMat, color, width);
-
-        if (created == 0)
-            Debug.LogWarning($"[InspectionView] 未找到可描边的 Renderer：{inspectedItem.name}", inspectedItem);
-    }
-
-    void ClearInspectionItemOutline()
-    {
-        for (int i = _inspectionOutlineRenderers.Count - 1; i >= 0; i--)
-        {
-            GameObject go = _inspectionOutlineRenderers[i];
-            if (go != null)
-                Destroy(go);
-            _inspectionOutlineRenderers.RemoveAt(i);
-        }
-    }
-
-    static void ApplyToolUiOutline(Image image, Color color, Vector2 effectDistance)
-    {
-        if (image == null) return;
-
-        Outline outline = image.GetComponent<Outline>();
-        if (outline == null)
-            outline = image.gameObject.AddComponent<Outline>();
-
-        outline.effectColor = color;
-        outline.effectDistance = effectDistance;
-        outline.useGraphicAlpha = true;
-    }
-
-    void ApplyToolUiOutline(Image image) =>
-        ApplyToolUiOutline(image, toolOutlineColor, toolOutlineDistance);
-
-    float ComputeInspectionOutlineWidth(GameObject target)
-    {
-        if (target == null) return itemOutlineWidth;
-
-        Bounds bounds = ItemInfoWorldUI.CalculateWorldBounds(target);
-        float maxExtent = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
-        return itemOutlineWidth * Mathf.Max(maxExtent, 0.2f);
-    }
-
-    Material GetItemOutlineBaseMaterial()
-    {
-        if (itemOutlineMaterial != null && itemOutlineMaterial.shader != null
-            && itemOutlineMaterial.shader.isSupported)
-            return itemOutlineMaterial;
-
-        if (characterInteraction != null && characterInteraction.outlineMaterial != null
-            && characterInteraction.outlineMaterial.shader != null
-            && characterInteraction.outlineMaterial.shader.isSupported)
-            return characterInteraction.outlineMaterial;
-
-        if (_itemOutlineMaterialInstance != null)
-            return _itemOutlineMaterialInstance;
-
-        Shader shader = Shader.Find("Hemiao/ItemOutline");
-        if (shader == null || !shader.isSupported)
-            shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null || !shader.isSupported)
-            shader = Shader.Find("Unlit/Color");
-        if (shader == null) return null;
-
-        _itemOutlineMaterialInstance = new Material(shader);
-        return _itemOutlineMaterialInstance;
-    }
-
-    static bool IsOutlineRendererObject(GameObject go)
-    {
-        if (go == null) return true;
-        string n = go.name;
-        return n.EndsWith(InspectionOutlineSuffix) || n.EndsWith("_Outline");
-    }
-
-    int TryAddInspectionOutlineForRenderer(MeshRenderer mr, Material baseMat, Color color, float width)
-    {
-        if (mr == null || !mr.enabled || IsOutlineRendererObject(mr.gameObject)) return 0;
-
-        MeshFilter mf = mr.GetComponent<MeshFilter>();
-        if (mf == null || mf.sharedMesh == null) return 0;
-
-        GameObject outlineGo = new GameObject(mr.gameObject.name + InspectionOutlineSuffix);
-        outlineGo.transform.SetParent(mr.transform, false);
-        outlineGo.transform.localPosition = Vector3.zero;
-        outlineGo.transform.localRotation = Quaternion.identity;
-        outlineGo.transform.localScale = Vector3.one;
-        outlineGo.layer = mr.gameObject.layer;
-        outlineGo.hideFlags = HideFlags.DontSave;
-
-        MeshFilter cloneMf = outlineGo.AddComponent<MeshFilter>();
-        cloneMf.sharedMesh = mf.sharedMesh;
-
-        MeshRenderer cloneMr = outlineGo.AddComponent<MeshRenderer>();
-        SetupInspectionOutlineRenderer(cloneMr, baseMat, color, width);
-        _inspectionOutlineRenderers.Add(outlineGo);
-        return 1;
-    }
-
-    int TryAddInspectionOutlineForSkinned(SkinnedMeshRenderer smr, Material baseMat, Color color, float width)
-    {
-        if (smr == null || !smr.enabled || smr.sharedMesh == null || IsOutlineRendererObject(smr.gameObject))
-            return 0;
-
-        GameObject outlineGo = new GameObject(smr.gameObject.name + InspectionOutlineSuffix);
-        outlineGo.transform.SetParent(smr.transform, false);
-        outlineGo.transform.localPosition = Vector3.zero;
-        outlineGo.transform.localRotation = Quaternion.identity;
-        outlineGo.transform.localScale = Vector3.one;
-        outlineGo.layer = smr.gameObject.layer;
-        outlineGo.hideFlags = HideFlags.DontSave;
-
-        SkinnedMeshRenderer cloneSmr = outlineGo.AddComponent<SkinnedMeshRenderer>();
-        cloneSmr.sharedMesh = smr.sharedMesh;
-        cloneSmr.bones = smr.bones;
-        cloneSmr.rootBone = smr.rootBone;
-        SetupInspectionOutlineRenderer(cloneSmr, baseMat, color, width);
-        _inspectionOutlineRenderers.Add(outlineGo);
-        return 1;
-    }
-
-    static void SetupInspectionOutlineRenderer(Renderer renderer, Material baseMat, Color color, float width)
-    {
-        renderer.material = CreateInspectionOutlineMaterialInstance(baseMat, color, width);
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-    }
-
-    static Material CreateInspectionOutlineMaterialInstance(Material baseMat, Color color, float width)
-    {
-        Material inst = new Material(baseMat);
-        if (inst.HasProperty("_Color"))
-            inst.SetColor("_Color", color);
-        else if (inst.HasProperty("_BaseColor"))
-            inst.SetColor("_BaseColor", color);
-        if (inst.HasProperty("_OutlineWidth"))
-            inst.SetFloat("_OutlineWidth", width);
-        return inst;
     }
 }

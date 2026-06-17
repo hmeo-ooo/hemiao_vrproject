@@ -8,8 +8,8 @@ public class DebtManager : MonoBehaviour
 {
     public static DebtManager Instance { get; private set; }
 
-    [Tooltip("开局债务（与过渡场景叙事一致时可设为 1000000）。")]
-    public int initialDebt = 1_000_000;
+    [Tooltip("开局债务。")]
+    public int initialDebt = 100_000;
 
     [Tooltip("当前剩余债务；运行时会从 initialDebt 初始化（若仍为 0 且 initialDebt > 0）。")]
     public int currentDebt;

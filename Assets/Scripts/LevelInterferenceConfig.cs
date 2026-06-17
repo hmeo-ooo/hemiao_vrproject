@@ -39,7 +39,7 @@ public class LevelInterferenceConfig
     [Range(32, 1024)]
     public int noiseTextureSize = 256;
 
-    [Tooltip("雪花点的色调。Alpha 会再与 intensity 相乘。")]
+    [Tooltip("雪花点的色调（RGB）。整体不透明度由 intensity 控制；此处 Alpha 为额外乘子，留 0 或 1 均可。")]
     public Color tint = Color.white;
 
     [Header("TV Static Overlay — 中央图案 / 取消")]
@@ -73,4 +73,18 @@ public class LevelInterferenceConfig
     [Tooltip("单次按键闪烁持续时间（秒）。")]
     [Min(0f)]
     public float flashDuration = 0.18f;
+
+    /// <summary>修正 Inspector 中常见的无效值（tint/center 尺寸为 0 等）。</summary>
+    public void SanitizeDefaults()
+    {
+        if (noiseFps < 1) noiseFps = 24;
+        if (noiseTextureSize < 32) noiseTextureSize = 256;
+        if (centerPatternSize.x < 8f || centerPatternSize.y < 8f)
+            centerPatternSize = new Vector2(220f, 220f);
+        if (centerPatternPulseScale < 1f) centerPatternPulseScale = 1.25f;
+        if (pressesToCancel < 1) pressesToCancel = 10;
+        if (cancelKey == KeyCode.None) cancelKey = KeyCode.E;
+        if (centerPatternColor.a <= 0f)
+            centerPatternColor = Color.white;
+    }
 }
