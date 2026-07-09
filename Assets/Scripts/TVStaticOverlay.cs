@@ -205,8 +205,7 @@ public class TVStaticOverlay : MonoBehaviour
         overlayCanvas.sortingOrder = 900;
 
         var scaler = canvasGo.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
+        RuntimeUiUtility.ConfigureOverlayCanvasScaler(scaler);
 
         var imgGo = new GameObject("Noise");
         imgGo.transform.SetParent(canvasGo.transform, false);

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelNumber: 5
   displayName: day 5
-  levelDurationSeconds: 180
+  levelDurationSeconds: 240
   complexityComposition:
     basicProbability: 40
     compositeProbability: 60

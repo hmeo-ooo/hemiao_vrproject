@@ -5,21 +5,31 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// 进入场景后首先显示的开始界面：全屏黑色 70% 蒙版 + 居中 Start 按钮。
+/// 进入场景后首先显示的开始界面：全屏黑色 70% 蒙版 + 居中 Start / Exit 按钮。
+/// panelRoot 留空时运行时自动创建；也可在场景中预先摆好 UI 并拖入引用。
 /// </summary>
 public class StartScreenUI : MonoBehaviour
 {
     [Header("可选：留空则在运行时自动创建 Screen Space UI")]
     public GameObject panelRoot;
     public Button startButton;
+    public Button exitButton;
 
     [Header("文案")]
     public string startButtonLabel = "Start";
+    public string exitButtonLabel = "Exit";
 
     [Tooltip("蒙版颜色（默认黑色 70% 透明度）")]
     public Color overlayColor = new Color(0f, 0f, 0f, 0.7f);
 
+    [Header("布局（仅自动创建时生效）")]
+    public Vector2 buttonSize = new Vector2(360f, 120f);
+    public float buttonSpacing = 140f;
+    public float buttonFontSize = 64f;
+    public TMP_FontAsset buttonFont;
+
     Canvas _canvas;
+    bool _ownsRuntimeCanvas;
     Action _onStartClicked;
 
     void Awake()
@@ -32,6 +42,7 @@ public class StartScreenUI : MonoBehaviour
     {
         _onStartClicked = onStartClicked;
         EnsureUiBuilt();
+        RuntimeUiUtility.NormalizeOverlayCanvas(_canvas, transform);
 
         if (panelRoot != null)
             panelRoot.SetActive(true);
@@ -42,6 +53,12 @@ public class StartScreenUI : MonoBehaviour
         {
             startButton.onClick.RemoveAllListeners();
             startButton.onClick.AddListener(HandleStartClicked);
+        }
+
+        if (exitButton != null)
+        {
+            exitButton.onClick.RemoveAllListeners();
+            exitButton.onClick.AddListener(HandleExitClicked);
         }
 
         GameplayInputGate.SetBlocked(true);
@@ -58,6 +75,8 @@ public class StartScreenUI : MonoBehaviour
 
         if (startButton != null)
             startButton.onClick.RemoveAllListeners();
+        if (exitButton != null)
+            exitButton.onClick.RemoveAllListeners();
     }
 
     void HandleStartClicked()
@@ -65,6 +84,15 @@ public class StartScreenUI : MonoBehaviour
         Hide();
         _onStartClicked?.Invoke();
         _onStartClicked = null;
+    }
+
+    void HandleExitClicked()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     void HideImmediate()
@@ -77,15 +105,23 @@ public class StartScreenUI : MonoBehaviour
 
     void OnDestroy()
     {
-        RuntimeUiUtility.DestroyCanvas(ref _canvas);
-        panelRoot = null;
-        startButton = null;
+        if (_ownsRuntimeCanvas)
+            RuntimeUiUtility.DestroyCanvas(ref _canvas);
+        _canvas = null;
     }
 
-    void EnsureUiBuilt()
+    /// <summary>编辑器烘焙 / 运行时共用：panelRoot 已有则只解析 Canvas，否则自动创建。</summary>
+    public void EnsureUiBuilt()
     {
-        if (panelRoot == null)
-            BuildRuntimeUi();
+        if (panelRoot != null)
+        {
+            if (_canvas == null)
+                _canvas = panelRoot.GetComponentInParent<Canvas>();
+            RuntimeUiUtility.NormalizeOverlayCanvas(_canvas, transform);
+            return;
+        }
+
+        BuildRuntimeUi();
     }
 
     void BuildRuntimeUi()
@@ -93,15 +129,14 @@ public class StartScreenUI : MonoBehaviour
         EnsureEventSystem();
 
         var canvasGo = new GameObject("StartScreenCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        canvasGo.transform.SetParent(null, false);
+        canvasGo.transform.SetParent(transform, false);
 
         _canvas = canvasGo.GetComponent<Canvas>();
         _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _canvas.sortingOrder = 250;
 
         var scaler = canvasGo.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
+        RuntimeUiUtility.ConfigureOverlayCanvasScaler(scaler);
 
         panelRoot = new GameObject("StartScreenPanel", typeof(RectTransform), typeof(Image));
         panelRoot.transform.SetParent(canvasGo.transform, false);
@@ -116,12 +151,15 @@ public class StartScreenUI : MonoBehaviour
         overlay.color = overlayColor;
         overlay.raycastTarget = true;
 
-        startButton = CreateCenterButton(panelRoot.transform, startButtonLabel);
+        float half = buttonSpacing * 0.5f;
+        startButton = CreateCenterButton(panelRoot.transform, startButtonLabel, new Vector2(0f, half));
+        exitButton = CreateCenterButton(panelRoot.transform, exitButtonLabel, new Vector2(0f, -half));
         panelRoot.SetActive(false);
+        _ownsRuntimeCanvas = Application.isPlaying;
         RuntimeUiUtility.MarkPlayModeOnly(canvasGo);
     }
 
-    static Button CreateCenterButton(Transform parent, string label)
+    Button CreateCenterButton(Transform parent, string label, Vector2 anchoredPosition)
     {
         var go = new GameObject(label, typeof(RectTransform), typeof(Image), typeof(Button), typeof(StartButtonFeedback));
         go.transform.SetParent(parent, false);
@@ -130,8 +168,8 @@ public class StartScreenUI : MonoBehaviour
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(360, 120);
-        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = buttonSize;
+        rt.anchoredPosition = anchoredPosition;
 
         var img = go.GetComponent<Image>();
         img.color = new Color(1f, 1f, 1f, 0f);
@@ -151,13 +189,15 @@ public class StartScreenUI : MonoBehaviour
 
         var tmp = textGo.GetComponent<TextMeshProUGUI>();
         tmp.text = label;
-        tmp.fontSize = 64;
+        tmp.fontSize = buttonFontSize;
         tmp.fontStyle = FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
         tmp.raycastTarget = false;
 
-        TMP_FontAsset font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+        TMP_FontAsset font = buttonFont != null
+            ? buttonFont
+            : Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
         if (font != null)
             tmp.font = font;
 

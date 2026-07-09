@@ -21,7 +21,7 @@ MonoBehaviour:
     dangerousProbability: 0
   spawnPrefabs: []
   spawnInterval: 2
-  itemsPerBurst: 1
+  itemsPerBurst: 3
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
@@ -92,13 +92,13 @@ MonoBehaviour:
         type: 3}
     - prefab: {fileID: 4241415306051010994, guid: 6ed972a457da1a140bc8ea246074fd14,
         type: 3}
-    initialTrashCount: 12
+    initialTrashCount: 15
     allowDuplicates: 1
     respawnEnabled: 1
-    respawnInterval: 5
-    respawnPerBurst: 1
+    respawnInterval: 3
+    respawnPerBurst: 3
     respawnTargetActiveCount: 0
-    maxTotalSpawned: 30
+    maxTotalSpawned: 40
   interferences: []
   designNotes: 
   showTutorialBeforeLevel: 1

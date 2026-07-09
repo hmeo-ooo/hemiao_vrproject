@@ -2,56 +2,74 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 准星对准物品时在屏幕准星旁显示名称与介绍。尺寸与偏移均基于 1920×1080，由 CanvasScaler 自适应。
+/// </summary>
 public class ItemInfoWorldUI : MonoBehaviour
 {
-    [Tooltip("\u9762\u677F\u5728\u7269\u4F53\u53F3\u4FA7\u7684\u4E16\u754C\u7A7A\u95F4\u504F\u79FB")]
-    public float sideOffset = 0.55f;
+    [Tooltip("面板相对准星（屏幕中心）的偏移，参考分辨率像素。X 正=右，Y 正=上。")]
+    public Vector2 crosshairOffset = new Vector2(56f, 0f);
 
-    [Tooltip("\u9762\u677F\u6700\u5927\u5BBD\u5EA6\uFF08\u50CF\u7D20\uFF09\u3002\u4ECB\u7ECD\u6587\u5B57\u6309\u6B64\u5BBD\u5EA6\u81EA\u52A8\u6362\u884C\u3002")]
-    public float maxPanelWidth = 260f;
+    [Tooltip("面板最大宽度（参考分辨率 1920×1080 像素）。")]
+    public float maxPanelWidth = 520f;
 
-    [Tooltip("\u9762\u677F\u6700\u5C0F\u9AD8\u5EA6\uFF08\u50CF\u7D20\uFF09\u3002\u5185\u5BB9\u6BD4\u8FD9\u4E2A\u77ED\u65F6\u9762\u677F\u4ECD\u4FDD\u6301\u8BE5\u9AD8\u5EA6\u3002")]
-    public float minPanelHeight = 72f;
+    [Tooltip("面板最小高度（参考分辨率 1920×1080 像素）。")]
+    public float minPanelHeight = 144f;
 
-    [Tooltip("\u9762\u677F\u6700\u5927\u9AD8\u5EA6\uFF08\u50CF\u7D20\uFF09\u3002\u5185\u5BB9\u8D85\u8FC7\u65F6\u4F1A\u88AB\u88C1\u5207\uFF0C\u53EF\u7528\u9F20\u6807\u6EDA\u8F6E\u4E0A\u4E0B\u6EDA\u52A8\u3002\u8BBE\u4E3A 0 \u8868\u793A\u4E0D\u9650\u5236\u3002")]
-    public float maxPanelHeight = 210f;
+    [Tooltip("面板最大高度（参考分辨率 1920×1080 像素）。0 = 不限制。")]
+    public float maxPanelHeight = 420f;
 
-    [Tooltip("\u9F20\u6807\u6EDA\u8F6E\u6EDA\u52A8\u7075\u654F\u5EA6\uFF08\u50CF\u7D20 / \u6EDA\u52A8\u5355\u4F4D\uFF09\u3002")]
-    public float scrollSensitivity = 50f;
+    [Tooltip("鼠标滚轮滚动灵敏度（参考分辨率像素 / 滚动单位）。")]
+    public float scrollSensitivity = 100f;
 
-    [Tooltip("\u5185\u8FB9\u8DDD\uFF1A\u5DE6\u3001\u53F3\u3001\u4E0A\u3001\u4E0B\uFF08\u50CF\u7D20\uFF09")]
-    public Vector4 padding = new Vector4(10f, 10f, 8f, 8f);
+    [Tooltip("内边距：左、右、上、下（参考分辨率像素）。")]
+    public Vector4 padding = new Vector4(20f, 20f, 16f, 16f);
 
-    [Tooltip("\u540D\u79F0\u4E0E\u4ECB\u7ECD\u4E4B\u95F4\u7684\u95F4\u8DDD")]
-    public float gapNameToDesc = 4f;
+    [Tooltip("名称与介绍间距（参考分辨率像素）。")]
+    public float gapNameToDesc = 8f;
 
-    [Tooltip("\u7070\u8272\u5E95\u8272")]
     public Color backgroundColor = new Color(0.22f, 0.22f, 0.22f, 0.9f);
-
-    [Tooltip("\u6587\u5B57\u989C\u8272")]
     public Color textColor = Color.white;
 
-    [Tooltip("\u540D\u79F0\u5B57\u53F7")]
-    public float nameFontSize = 18f;
+    [Tooltip("名称字号（参考分辨率 1920×1080）。")]
+    public float nameFontSize = 36f;
 
-    [Tooltip("\u4ECB\u7ECD\u5B57\u53F7")]
-    public float descriptionFontSize = 13f;
+    [Tooltip("介绍字号（参考分辨率 1920×1080）。")]
+    public float descriptionFontSize = 26f;
 
-    Canvas canvas;
-    RectTransform panelRect;
-    RectTransform viewportRect;
-    RectTransform contentRect;
-    TMP_Text nameText;
-    TMP_Text descriptionText;
+    [Header("UI 引用（留空则运行时自动创建）")]
+    public Canvas canvas;
+    public CanvasScaler canvasScaler;
+    public RectTransform panelRect;
+    public RectTransform contentRect;
+    public TMP_Text nameText;
+    public TMP_Text descriptionText;
+
     Camera uiCamera;
     Transform followTarget;
+    ItemInformation shownInfo;
     float contentTotalHeight;
     float viewportHeight;
+    int _trackedScreenWidth;
+    int _trackedScreenHeight;
+    bool _ownsRuntimeCanvas;
 
     public void Initialize(Camera camera)
     {
         uiCamera = camera;
-        if (canvas != null) return;
+        EnsureUiBuilt();
+        TrackScreenSize(forceRelayout: true);
+    }
+
+    /// <summary>编辑器烘焙 / 运行时共用。</summary>
+    public void EnsureUiBuilt()
+    {
+        if (canvas != null && panelRect != null)
+        {
+            RuntimeUiUtility.NormalizeOverlayCanvas(canvas, transform);
+            return;
+        }
+
         BuildUi();
     }
 
@@ -59,13 +77,28 @@ public class ItemInfoWorldUI : MonoBehaviour
     {
         if (info == null || anchor == null || panelRect == null) return;
 
+        bool contentChanged = shownInfo != info;
         followTarget = anchor;
-        nameText.text = SanitizeForMsyh(info.ResolvedDisplayName);
-        descriptionText.text = SanitizeForMsyh(info.itemDescription);
+        shownInfo = info;
 
-        LayoutPanel();
+        if (contentChanged)
+        {
+            nameText.text = SanitizeForMsyh(info.ResolvedDisplayName);
+            descriptionText.text = SanitizeForMsyh(info.itemDescription);
+            TrackScreenSize(forceRelayout: true);
+            LayoutPanel();
+        }
+
         panelRect.gameObject.SetActive(true);
         UpdatePosition();
+    }
+
+    public void Hide()
+    {
+        followTarget = null;
+        shownInfo = null;
+        if (panelRect != null)
+            panelRect.gameObject.SetActive(false);
     }
 
     void LayoutPanel()
@@ -106,16 +139,11 @@ public class ItemInfoWorldUI : MonoBehaviour
         rt.anchoredPosition = new Vector2(xLeft, yTop);
     }
 
-    public void Hide()
-    {
-        followTarget = null;
-        if (panelRect != null)
-            panelRect.gameObject.SetActive(false);
-    }
-
     void Update()
     {
         if (panelRect == null || !panelRect.gameObject.activeSelf) return;
+        if (TrackScreenSize(forceRelayout: true))
+            LayoutPanel();
         HandleScrollInput();
     }
 
@@ -136,26 +164,67 @@ public class ItemInfoWorldUI : MonoBehaviour
 
     void LateUpdate()
     {
-        if (followTarget == null || !panelRect.gameObject.activeSelf) return;
+        if (followTarget == null || panelRect == null || !panelRect.gameObject.activeSelf) return;
         UpdatePosition();
     }
 
     void UpdatePosition()
     {
-        if (uiCamera == null || followTarget == null) return;
+        if (uiCamera == null || followTarget == null || panelRect == null) return;
 
-        Bounds bounds = CalculateWorldBounds(followTarget.gameObject);
-        Vector3 worldPos = bounds.center + uiCamera.transform.right * sideOffset;
-        Vector3 screenPos = uiCamera.WorldToScreenPoint(worldPos);
-
-        if (screenPos.z <= 0f)
+        Vector3 worldCheck = CalculateWorldBounds(followTarget.gameObject).center;
+        Vector3 screenCheck = uiCamera.WorldToScreenPoint(worldCheck);
+        if (screenCheck.z <= 0f)
         {
             panelRect.gameObject.SetActive(false);
             return;
         }
 
         panelRect.gameObject.SetActive(true);
-        panelRect.position = screenPos;
+
+        float scale = canvas != null && canvas.scaleFactor > 0f
+            ? canvas.scaleFactor
+            : GameDisplaySettings.UiScaleFactor;
+        float panelScreenW = maxPanelWidth * scale;
+        float margin = GameDisplaySettings.ScaleDesignPixels(16f);
+        float centerX = Screen.width * 0.5f;
+        float gap = Mathf.Abs(crosshairOffset.x);
+
+        bool placeOnRight = centerX + gap + panelScreenW + margin <= Screen.width;
+        if (!placeOnRight && centerX - gap - panelScreenW - margin < 0f)
+            placeOnRight = true;
+
+        SetPanelSide(placeOnRight);
+
+        float offsetX = Mathf.Abs(crosshairOffset.x);
+        float offsetY = crosshairOffset.y;
+        panelRect.anchoredPosition = placeOnRight
+            ? new Vector2(offsetX, offsetY)
+            : new Vector2(-offsetX, offsetY);
+    }
+
+    void SetPanelSide(bool placeOnRight)
+    {
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.pivot = new Vector2(placeOnRight ? 0f : 1f, 0.5f);
+    }
+
+    bool TrackScreenSize(bool forceRelayout)
+    {
+        GameDisplaySettings.RefreshUiScaleFactorIfNeeded();
+        if (!forceRelayout &&
+            Screen.width == _trackedScreenWidth &&
+            Screen.height == _trackedScreenHeight)
+            return false;
+
+        _trackedScreenWidth = Screen.width;
+        _trackedScreenHeight = Screen.height;
+
+        if (canvasScaler != null)
+            canvasScaler.referenceResolution = GameDisplaySettings.DesignReferenceResolution;
+
+        return true;
     }
 
     public static Bounds CalculateWorldBounds(GameObject root)
@@ -170,18 +239,15 @@ public class ItemInfoWorldUI : MonoBehaviour
         return bounds;
     }
 
-    /// <summary>
-    /// MSYH SDF 为静态图集，不含弯引号等排版字符；显示前替换为字库内已有的标点。
-    /// </summary>
     static string SanitizeForMsyh(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
 
         return text
-            .Replace('\u2018', '\u300C') // ' → 「
-            .Replace('\u2019', '\u300D') // ' → 」
-            .Replace('\u201C', '\u300C') // " → 「
-            .Replace('\u201D', '\u300D'); // " → 」
+            .Replace('\u2018', '\u300C')
+            .Replace('\u2019', '\u300D')
+            .Replace('\u201C', '\u300C')
+            .Replace('\u201D', '\u300D');
     }
 
     void BuildUi()
@@ -193,30 +259,34 @@ public class ItemInfoWorldUI : MonoBehaviour
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 120;
 
-        canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        canvasScaler = canvasGo.AddComponent<CanvasScaler>();
+        RuntimeUiUtility.ConfigureOverlayCanvasScaler(canvasScaler);
         canvasGo.AddComponent<GraphicRaycaster>();
 
-        // 面板根：固定宽度，高度由 LayoutPanel 计算
+        var canvasRect = canvasGo.GetComponent<RectTransform>();
+        canvasRect.anchorMin = Vector2.zero;
+        canvasRect.anchorMax = Vector2.one;
+        canvasRect.offsetMin = Vector2.zero;
+        canvasRect.offsetMax = Vector2.zero;
+
         var panelGo = new GameObject("ItemInfoPanel");
         panelGo.transform.SetParent(canvasGo.transform, false);
         panelRect = panelGo.AddComponent<RectTransform>();
-        panelRect.pivot = new Vector2(0f, 0.5f);
+        SetPanelSide(true);
         panelRect.sizeDelta = new Vector2(maxPanelWidth, minPanelHeight);
 
         var bg = panelGo.AddComponent<Image>();
         bg.color = backgroundColor;
 
-        // Viewport：占满 panel，加 RectMask2D 做裁切（超出 panel 的内容不可见）
         var viewportGo = new GameObject("Viewport");
         viewportGo.transform.SetParent(panelGo.transform, false);
-        viewportRect = viewportGo.AddComponent<RectTransform>();
+        var viewportRect = viewportGo.AddComponent<RectTransform>();
         viewportRect.anchorMin = Vector2.zero;
         viewportRect.anchorMax = Vector2.one;
         viewportRect.offsetMin = Vector2.zero;
         viewportRect.offsetMax = Vector2.zero;
         viewportGo.AddComponent<RectMask2D>();
 
-        // Content：内容容器，pivot 顶部、水平 stretch；高度由 LayoutPanel 设置为内容总高度
         var contentGo = new GameObject("Content");
         contentGo.transform.SetParent(viewportGo.transform, false);
         contentRect = contentGo.AddComponent<RectTransform>();
@@ -233,6 +303,23 @@ public class ItemInfoWorldUI : MonoBehaviour
             TextAlignmentOptions.TopLeft, wrapping: true, ellipsis: false);
 
         panelRect.gameObject.SetActive(false);
+        _ownsRuntimeCanvas = Application.isPlaying;
+        RuntimeUiUtility.MarkPlayModeOnly(canvasGo);
+        RuntimeUiUtility.NormalizeOverlayCanvas(canvas, transform);
+    }
+
+    void OnDestroy()
+    {
+        if (!_ownsRuntimeCanvas || canvas == null) return;
+
+        GameObject go = canvas.gameObject;
+        canvas = null;
+        if (go == null) return;
+
+        if (Application.isPlaying)
+            Destroy(go);
+        else
+            DestroyImmediate(go);
     }
 
     TMP_Text CreateChildTmp(Transform parent, string name, float fontSize, FontStyles style,

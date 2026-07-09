@@ -14,19 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelNumber: 3
   displayName: day 3
-  levelDurationSeconds: 180
+  levelDurationSeconds: 200
   complexityComposition:
     basicProbability: 56.6
-    compositeProbability: 40.7
-    dangerousProbability: 34.8
+    compositeProbability: 34.4
+    dangerousProbability: 22.5
   spawnPrefabs: []
   spawnInterval: 2
   itemsPerBurst: 1
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 25
-  maxTotalItems: 40
+  maxActiveItems: 15
+  maxTotalItems: 20
   autoStartSpawning: 1
   sceneProps: []
   aisles:
@@ -124,7 +124,7 @@ MonoBehaviour:
     respawnInterval: 5
     respawnPerBurst: 1
     respawnTargetActiveCount: 0
-    maxTotalSpawned: 25
+    maxTotalSpawned: 20
   interferences: []
   designNotes: 
   showTutorialBeforeLevel: 1

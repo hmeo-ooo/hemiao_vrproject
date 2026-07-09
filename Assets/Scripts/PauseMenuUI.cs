@@ -34,6 +34,7 @@ public class PauseMenuUI : MonoBehaviour
     public TMP_FontAsset uiFont;
 
     Canvas _overlayCanvas;
+    bool _ownsRuntimeCanvas;
     Action _onResume;
 
     void Awake()
@@ -57,6 +58,7 @@ public class PauseMenuUI : MonoBehaviour
     public void Show(Action onResume)
     {
         EnsureUiBuilt();
+        RuntimeUiUtility.NormalizeOverlayCanvas(_overlayCanvas, transform);
         _onResume = onResume;
         ApplyCopy();
 
@@ -89,12 +91,9 @@ public class PauseMenuUI : MonoBehaviour
 
     void OnDestroy()
     {
-        RuntimeUiUtility.DestroyCanvas(ref _overlayCanvas);
-        panelRoot = null;
-        pauseTitleText = null;
-        tutorialBodyText = null;
-        resumeButton = null;
-        resumeButtonLabel = null;
+        if (_ownsRuntimeCanvas)
+            RuntimeUiUtility.DestroyCanvas(ref _overlayCanvas);
+        _overlayCanvas = null;
     }
 
     void HandleResumeClicked()
@@ -126,9 +125,16 @@ public class PauseMenuUI : MonoBehaviour
         if (resumeButtonLabel != null) resumeButtonLabel.font = font;
     }
 
-    void EnsureUiBuilt()
+    public void EnsureUiBuilt()
     {
-        if (panelRoot != null) return;
+        if (panelRoot != null)
+        {
+            if (_overlayCanvas == null)
+                _overlayCanvas = panelRoot.GetComponentInParent<Canvas>();
+            RuntimeUiUtility.NormalizeOverlayCanvas(_overlayCanvas, transform);
+            return;
+        }
+
         BuildRuntimeUi();
     }
 
@@ -136,17 +142,14 @@ public class PauseMenuUI : MonoBehaviour
     {
         var canvasGo = new GameObject("PauseMenuCanvas",
             typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        canvasGo.transform.SetParent(null, false);
+        canvasGo.transform.SetParent(transform, false);
 
         _overlayCanvas = canvasGo.GetComponent<Canvas>();
         _overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _overlayCanvas.sortingOrder = 280;
 
         var scaler = canvasGo.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        scaler.matchWidthOrHeight = 0.5f;
+        RuntimeUiUtility.ConfigureOverlayCanvasScaler(scaler);
 
         panelRoot = CreatePanel(canvasGo.transform);
         panelRoot.name = "PausePanel";
@@ -170,6 +173,7 @@ public class PauseMenuUI : MonoBehaviour
         resumeButtonLabel = resumeButton.GetComponentInChildren<TMP_Text>();
 
         ApplyCopy();
+        _ownsRuntimeCanvas = Application.isPlaying;
         RuntimeUiUtility.MarkPlayModeOnly(canvasGo);
     }
 

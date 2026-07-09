@@ -222,7 +222,7 @@ MonoBehaviour:
   - prefab: {fileID: 26042307918521241, guid: ea03c3236528f6344a3f95208103f7ac, type: 3}
     count: 1
     spawnChance: 0.1
-  dropInitialSpeed: 0.4
+  dropInitialSpeed: 0
 --- !u!114 &8722988940871931281
 MonoBehaviour:
   m_ObjectHideFlags: 0

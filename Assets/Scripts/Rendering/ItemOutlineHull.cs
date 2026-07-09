@@ -48,6 +48,12 @@ namespace Hemiao.Rendering
             Apply();
         }
 
+        void LateUpdate()
+        {
+            if (!_applied)
+                Apply();
+        }
+
         void OnDisable()
         {
             Revert();

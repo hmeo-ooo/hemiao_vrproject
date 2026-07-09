@@ -17,16 +17,16 @@ MonoBehaviour:
   levelDurationSeconds: 150
   complexityComposition:
     basicProbability: 80
-    compositeProbability: 27
-    dangerousProbability: 20
+    compositeProbability: 15
+    dangerousProbability: 10
   spawnPrefabs: []
   spawnInterval: 2
   itemsPerBurst: 1
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 25
-  maxTotalItems: 30
+  maxActiveItems: 15
+  maxTotalItems: 15
   autoStartSpawning: 1
   sceneProps: []
   aisles:
@@ -124,7 +124,7 @@ MonoBehaviour:
     respawnInterval: 5
     respawnPerBurst: 1
     respawnTargetActiveCount: 0
-    maxTotalSpawned: 20
+    maxTotalSpawned: 15
   interferences: []
   designNotes: 
   showTutorialBeforeLevel: 1

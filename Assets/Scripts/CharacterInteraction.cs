@@ -496,6 +496,9 @@ public class CharacterInteraction : MonoBehaviour
         RefreshItemInfoUI();
     }
 
+    ItemInformation _lastShownItemInfo;
+    Transform _lastShownItemAnchor;
+
     void RefreshItemInfoUI()
     {
         if (itemInfoUI == null) return;
@@ -506,13 +509,27 @@ public class CharacterInteraction : MonoBehaviour
             if (info == null)
                 info = aimedObject.GetComponentInParent<ItemInformation>();
             if (info != null)
-                itemInfoUI.Show(info, GetItemRoot(info).transform);
+            {
+                Transform anchor = GetItemRoot(info).transform;
+                if (_lastShownItemInfo != info || _lastShownItemAnchor != anchor)
+                {
+                    itemInfoUI.Show(info, anchor);
+                    _lastShownItemInfo = info;
+                    _lastShownItemAnchor = anchor;
+                }
+            }
             else
+            {
                 itemInfoUI.Hide();
+                _lastShownItemInfo = null;
+                _lastShownItemAnchor = null;
+            }
         }
         else
         {
             itemInfoUI.Hide();
+            _lastShownItemInfo = null;
+            _lastShownItemAnchor = null;
         }
     }
 
@@ -571,14 +588,15 @@ public class CharacterInteraction : MonoBehaviour
 
         Color c = (aimedObject != null) ? crosshairAimColor : crosshairDefaultColor;
 
+        float size = GameDisplaySettings.ScaleDesignPixels(crosshairSize);
+
         if (crosshairTexture == null)
         {
-            DrawCrosshair(c, crosshairSize);
+            DrawCrosshair(c, size);
             return;
         }
 
         GUI.color = c;
-        float size = crosshairSize;
         float px = (Screen.width - size) / 2f;
         float py = (Screen.height - size) / 2f;
         GUI.DrawTexture(new Rect(px, py, size, size), crosshairTexture);

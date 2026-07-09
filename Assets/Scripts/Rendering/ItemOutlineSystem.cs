@@ -55,6 +55,7 @@ namespace Hemiao.Rendering
         {
             EnsurePump();
             SceneManager.sceneLoaded += OnSceneLoaded;
+            _ = SharedMaterial;
             ScanScene();
         }
 
@@ -189,11 +190,19 @@ namespace Hemiao.Rendering
         {
             var fromResources = Resources.Load<Material>(k_MaterialResourcePath);
             if (fromResources != null) return fromResources;
+
 #if UNITY_EDITOR
-            return UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(k_MaterialAssetPath);
-#else
-            return null;
+            var fromAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(k_MaterialAssetPath);
+            if (fromAsset != null) return fromAsset;
 #endif
+
+            var shader = Shader.Find("Hemiao/ItemOutlineHull");
+            if (shader == null) return null;
+
+            var runtimeMat = new Material(shader) { name = "ItemOutlineHull (Runtime)" };
+            runtimeMat.SetColor("_OutlineColor", DefaultColor);
+            runtimeMat.SetFloat("_OutlineWidth", DefaultWidthMeters);
+            return runtimeMat;
         }
 
         class RuntimePump : MonoBehaviour

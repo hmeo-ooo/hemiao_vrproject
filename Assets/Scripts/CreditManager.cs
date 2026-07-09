@@ -145,14 +145,15 @@ public class CreditManager : MonoBehaviour
     {
         if (!string.IsNullOrEmpty(subtitle) && Time.time < subtitleEndTime)
         {
+            float h = GameDisplaySettings.ScaleDesignPixels(40f);
+            float bottomPad = GameDisplaySettings.ScaleDesignPixels(10f);
             GUIStyle subStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.LowerCenter,
-                fontSize = 22,
+                fontSize = GameDisplaySettings.ScaleDesignPixelsInt(22),
                 normal = { textColor = subtitleColor }
             };
-            float h = 40f;
-            GUI.Label(new Rect(0, Screen.height - h - 10f, Screen.width, h), subtitle, subStyle);
+            GUI.Label(new Rect(0, Screen.height - h - bottomPad, Screen.width, h), subtitle, subStyle);
         }
     }
 }

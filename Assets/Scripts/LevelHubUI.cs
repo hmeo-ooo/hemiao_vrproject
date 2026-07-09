@@ -50,6 +50,7 @@ public class LevelHubUI : MonoBehaviour
     public float levelSelectBackButtonHeight = 52f;
 
     Canvas _overlayCanvas;
+    bool _ownsRuntimeCanvas;
     LevelSessionController _session;
     readonly System.Collections.Generic.List<Button> _levelButtons = new System.Collections.Generic.List<Button>();
 
@@ -66,10 +67,17 @@ public class LevelHubUI : MonoBehaviour
         WireButtons();
     }
 
-    void EnsureUiBuilt()
+    public void EnsureUiBuilt()
     {
-        if (panelRoot == null)
-            BuildRuntimeUi();
+        if (panelRoot != null)
+        {
+            if (_overlayCanvas == null)
+                _overlayCanvas = panelRoot.GetComponentInParent<Canvas>();
+            RuntimeUiUtility.NormalizeOverlayCanvas(_overlayCanvas, transform);
+            return;
+        }
+
+        BuildRuntimeUi();
     }
 
     void WireButtons()
@@ -196,6 +204,8 @@ public class LevelHubUI : MonoBehaviour
 
     public void Show()
     {
+        RuntimeUiUtility.NormalizeOverlayCanvas(_overlayCanvas, transform);
+
         if (panelRoot != null)
             panelRoot.SetActive(true);
         if (levelSelectPanel != null)
@@ -234,18 +244,10 @@ public class LevelHubUI : MonoBehaviour
 
     void OnDestroy()
     {
-        RuntimeUiUtility.DestroyCanvas(ref _overlayCanvas);
-        panelRoot = null;
-        levelSelectPanel = null;
-        levelSelectGrid = null;
-        levelText = null;
-        creditsText = null;
-        debtText = null;
-        statusText = null;
-        enterLevelButton = null;
-        repayDebtButton = null;
-        selectLevelButton = null;
-        levelSelectBackButton = null;
+        if (_ownsRuntimeCanvas)
+            RuntimeUiUtility.DestroyCanvas(ref _overlayCanvas);
+        _overlayCanvas = null;
+        _levelButtons.Clear();
     }
 
     public void SetStatus(string message)
@@ -311,15 +313,14 @@ public class LevelHubUI : MonoBehaviour
     void BuildRuntimeUi()
     {
         var canvasGo = new GameObject("LevelHubCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        canvasGo.transform.SetParent(null, false);
+        canvasGo.transform.SetParent(transform, false);
 
         _overlayCanvas = canvasGo.GetComponent<Canvas>();
         _overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _overlayCanvas.sortingOrder = 200;
 
         var scaler = canvasGo.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
+        RuntimeUiUtility.ConfigureOverlayCanvasScaler(scaler);
 
         panelRoot = CreatePanel(canvasGo.transform);
         panelRoot.SetActive(false);
@@ -346,6 +347,7 @@ public class LevelHubUI : MonoBehaviour
         BuildLevelSelectPanel(canvasGo.transform);
         ApplyHubFont();
         ApplyAllButtonStyles();
+        _ownsRuntimeCanvas = Application.isPlaying;
         RuntimeUiUtility.MarkPlayModeOnly(canvasGo);
     }
 

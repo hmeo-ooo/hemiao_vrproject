@@ -291,17 +291,20 @@ MonoBehaviour:
   knifeSprite: {fileID: 21300000, guid: 860d2c030d989ba44aa41febe4209a3d, type: 3}
   knifeIdleAnchor: {x: 0.8, y: 0.7}
   knifeUISize: {x: 300, y: 300}
-  knifeTipPivot: {x: 0.074074075, y: 0.9814816}
+  knifeTipPivot: {x: 0.10370371, y: 0.93518543}
   knifeUIRotation: 0
   knifeReturnSmoothTime: 0.12
-  cutAnchors: []
-  cutLines:
-  - localStart: {x: 0.23071128, y: 0.065382816, z: -0.06567919}
-    localEnd: {x: -0.0880956, y: 0.050230734, z: -0.06542258}
-    hitRadius: 0.04
-  - localStart: {x: -0.07565783, y: 0.05432049, z: -0.043980703}
-    localEnd: {x: -0.08511358, y: 0.036669936, z: 0.1854469}
-    hitRadius: 0.04
+  cutAnchors:
+  - localPosition: {x: 0.18596853, y: 0.08834255, z: -0.043383032}
+    localNormal: {x: -0.12830192, y: 0.98811907, z: -0.08461261}
+    radius: 0.05
+  - localPosition: {x: -0.05935876, y: 0.056573495, z: -0.042385068}
+    localNormal: {x: -0.12830192, y: 0.98811907, z: -0.08461261}
+    radius: 0.05
+  - localPosition: {x: -0.09020577, y: 0.03814539, z: 0.16286843}
+    localNormal: {x: -0.11773474, y: 0.98885113, z: 0.09117025}
+    radius: 0.05
+  cutLines: []
   cutMarkerColor: {r: 1, g: 0.15, b: 0.15, a: 1}
   cutMarkerDashLength: 0.02
   cutMarkerGapLength: 0.015

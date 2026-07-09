@@ -337,7 +337,7 @@ MonoBehaviour:
       type: 3}
     count: 1
   optionalDropEntries: []
-  dropInitialSpeed: 0.4
+  dropInitialSpeed: 0
 --- !u!114 &8722988940871931281
 MonoBehaviour:
   m_ObjectHideFlags: 0

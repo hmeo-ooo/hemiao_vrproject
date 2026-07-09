@@ -945,8 +945,7 @@ public class InspectionView : MonoBehaviour
         overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         overlayCanvas.sortingOrder = 800;
         var scaler = canvasGo.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
+        RuntimeUiUtility.ConfigureOverlayCanvasScaler(scaler);
         canvasGo.AddComponent<GraphicRaycaster>();
         canvasRt = canvasGo.GetComponent<RectTransform>();
 

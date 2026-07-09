@@ -197,7 +197,7 @@ MonoBehaviour:
   hammerSmashInstruction: "\u5DE6\u952E\u62FE\u53D6\u9524\u5B50\uFF0C\u5BF9\u7269\u54C1\u6572\u51FB
     {0} \u6B21"
   inspectionDisplayEulers: {x: 90, y: 44.5, z: -98}
-  inspectionDisplayDistance: 0.8
+  inspectionDisplayDistance: 1.02
   knifeSprite: {fileID: 0}
   knifeIdleAnchor: {x: 0.85, y: 0.5}
   knifeUISize: {x: 220, y: 220}

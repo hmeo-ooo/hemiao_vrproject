@@ -195,14 +195,17 @@ MonoBehaviour:
   knifeSprite: {fileID: 21300000, guid: 860d2c030d989ba44aa41febe4209a3d, type: 3}
   knifeIdleAnchor: {x: 0.8, y: 0.7}
   knifeUISize: {x: 300, y: 300}
-  knifeTipPivot: {x: 0.059259254, y: 0.9814816}
+  knifeTipPivot: {x: 0.08888891, y: 0.9425924}
   knifeUIRotation: 0
   knifeReturnSmoothTime: 0.12
-  cutAnchors: []
-  cutLines:
-  - localStart: {x: 0.031223407, y: 0.03521158, z: -0.14934541}
-    localEnd: {x: 0.029865362, y: 0.037037667, z: 0.116786316}
-    hitRadius: 0.04
+  cutAnchors:
+  - localPosition: {x: 0.006796699, y: 0.053242724, z: -0.10219997}
+    localNormal: {x: 0.4473846, y: 0.8943417, z: -0.000047802918}
+    radius: 0.05
+  - localPosition: {x: 0.018631984, y: 0.041374713, z: 0.08836669}
+    localNormal: {x: 0.1318609, y: 0.98794556, z: 0.08109438}
+    radius: 0.05
+  cutLines: []
   cutMarkerColor: {r: 1, g: 0.15, b: 0.15, a: 1}
   cutMarkerDashLength: 0.02
   cutMarkerGapLength: 0.015
@@ -230,7 +233,7 @@ MonoBehaviour:
       type: 3}
     count: 1
     spawnChance: 0.3
-  dropInitialSpeed: 0.4
+  dropInitialSpeed: 0
 --- !u!114 &8722988940871931281
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -365,4 +365,4 @@ MonoBehaviour:
       type: 3}
     count: 1
     spawnChance: 0.1
-  dropInitialSpeed: 0.4
+  dropInitialSpeed: 0

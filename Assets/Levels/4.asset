@@ -25,8 +25,8 @@ MonoBehaviour:
   spawnSpreadRadius: 0.3
   burstImpulse: 0
   burstImpulseRandomness: 0
-  maxActiveItems: 25
-  maxTotalItems: 40
+  maxActiveItems: 15
+  maxTotalItems: 25
   autoStartSpawning: 1
   sceneProps: []
   aisles:
@@ -124,7 +124,7 @@ MonoBehaviour:
     respawnInterval: 5
     respawnPerBurst: 1
     respawnTargetActiveCount: 0
-    maxTotalSpawned: 30
+    maxTotalSpawned: 20
   interferences:
   - type: 0
     triggerAtSeconds: 30

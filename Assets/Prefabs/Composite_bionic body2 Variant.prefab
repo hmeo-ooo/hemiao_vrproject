@@ -181,7 +181,7 @@ MonoBehaviour:
   knifeSprite: {fileID: 21300000, guid: 860d2c030d989ba44aa41febe4209a3d, type: 3}
   knifeIdleAnchor: {x: 0.8, y: 0.7}
   knifeUISize: {x: 300, y: 300}
-  knifeTipPivot: {x: 0.059259254, y: 0.9777778}
+  knifeTipPivot: {x: 0.0925926, y: 0.9425927}
   knifeUIRotation: 0
   knifeReturnSmoothTime: 0.12
   cutAnchors:

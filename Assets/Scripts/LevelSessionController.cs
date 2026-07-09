@@ -12,6 +12,7 @@ public class LevelSessionController : MonoBehaviour
     [Header("引用")]
     public LevelManager levelManager;
     public StartScreenUI startScreenUI;
+    public BackstoryController backstoryIntroUI;
     public LevelHubUI levelHubUI;
     public LevelTutorialUI levelTutorialUI;
     public PauseMenuUI pauseMenuUI;
@@ -24,6 +25,10 @@ public class LevelSessionController : MonoBehaviour
     public TMP_Text gameplayDayText;
 
     public string dayTextFormat = "Day {0}";
+
+    [Header("背景故事")]
+    [Tooltip("点击 Start 后、进入关卡选择前，是否播放背景故事导入 UI。")]
+    public bool showBackstoryIntroOnStart = true;
 
     [Header("回合结束")]
     [Tooltip("倒计时结束后是否自动准备下一关（无下一关则重载当前关）。")]
@@ -63,6 +68,8 @@ public class LevelSessionController : MonoBehaviour
             levelManager = LevelManager.Instance;
         if (startScreenUI == null)
             startScreenUI = GetComponent<StartScreenUI>();
+        if (backstoryIntroUI == null)
+            backstoryIntroUI = GetComponent<BackstoryController>();
         if (levelHubUI == null)
             levelHubUI = GetComponent<LevelHubUI>();
         if (levelTutorialUI == null)
@@ -99,6 +106,21 @@ public class LevelSessionController : MonoBehaviour
     }
 
     void OnStartScreenDismissed()
+    {
+        if (ShouldShowBackstoryIntro())
+            backstoryIntroUI.Show(OnBackstoryIntroFinished);
+        else
+            ShowInitialHub();
+    }
+
+    bool ShouldShowBackstoryIntro()
+    {
+        if (!showBackstoryIntroOnStart || backstoryIntroUI == null)
+            return false;
+        return backstoryIntroUI.HasContent;
+    }
+
+    void OnBackstoryIntroFinished()
     {
         ShowInitialHub();
     }
